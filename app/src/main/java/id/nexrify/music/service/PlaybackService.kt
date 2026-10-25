@@ -30,8 +30,8 @@ class PlaybackService : MediaSessionService() {
     companion object {
         const val CHANNEL_ID = "nexrify_playback_channel"
         const val NOTIFICATION_ID = 1001
-        const val ACTION_NEXT = "_root_.id.nexrify.music.ACTION_NEXT"
-        const val ACTION_PREV = "_root_.id.nexrify.music.ACTION_PREV"
+        const val ACTION_NEXT = "id.nexrify.music.ACTION_NEXT"
+        const val ACTION_PREV = "id.nexrify.music.ACTION_PREV"
     }
 
     @OptIn(UnstableApi::class)
