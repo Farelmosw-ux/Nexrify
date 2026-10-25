@@ -61,6 +61,7 @@ import id.nexrify.music.viewmodel.MusicViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import id.nexrify.music.ui.theme.NexrifyAppTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -138,7 +139,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
         viewModel.showQueue(false)
     }
 
-    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
         Scaffold(
