@@ -67,6 +67,8 @@ import id.nexrify.music.ui.theme.PureWhite
 import id.nexrify.music.ui.theme.SubtleGray
 import id.nexrify.music.ui.theme.Typography
 import id.nexrify.music.viewmodel.MusicViewModel
+import id.nexrify.music.ui.components.SettingsDialog
+import id.nexrify.music.ui.theme.NexrifyAppTheme
 
 @Composable
 fun HomeScreen(
@@ -98,7 +100,7 @@ fun HomeScreen(
     var selectedGenre by remember { mutableStateOf("Semua") }
     val genres = listOf("Semua", "Pop", "Lo-Fi", "Rock", "Acoustic", "Anime", "Hip-Hop", "R&B", "Top Global")
 
-    val colors = _root_.id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
 
     Column(
         modifier = modifier
@@ -358,7 +360,7 @@ fun HomeScreen(
     }
 
     if (showSettingsDialog) {
-        _root_.id.nexrify.music.ui.components.SettingsDialog(
+        SettingsDialog(
             onDismiss = { showSettingsDialog = false }
         )
     }
@@ -377,7 +379,7 @@ fun AccountTopButton(
     account: UserAccount?,
     onClick: () -> Unit
 ) {
-    val colors = _root_.id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
 
     Box(
         modifier = Modifier
@@ -423,7 +425,7 @@ fun YtmMusicCard(
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val colors = _root_.id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
 
     Column(
         modifier = modifier
@@ -509,7 +511,7 @@ fun YtmMusicCard(
 
 @Composable
 private fun ShelfHeader(title: String, subtitle: String = "") {
-    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -567,7 +569,7 @@ private fun PlaylistShelf(
     playlists: List<Playlist>,
     onOpen: (String) -> Unit
 ) {
-    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -611,7 +613,7 @@ private fun ResumeCard(
     positionMs: Long,
     onClick: () -> Unit
 ) {
-    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
     val seconds = positionMs / 1000L
     val position = if (seconds >= 5L) String.format("Lanjut dari %d:%02d", seconds / 60, seconds % 60) else "Putar lagi"
 
