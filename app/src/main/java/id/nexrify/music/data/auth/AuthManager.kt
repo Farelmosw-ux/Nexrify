@@ -16,6 +16,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import id.nexrify.music.data.remote.HttpClientProvider
 
 data class UserAccount(
     val name: String,
@@ -28,7 +29,7 @@ data class UserAccount(
 class AuthManager private constructor(private val context: Context) {
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-    private val httpClient = _root_.id.nexrify.music.data.remote.HttpClientProvider.client
+    private val httpClient = HttpClientProvider.client
 
     private val _authState = MutableStateFlow<UserAccount?>(loadStoredAccount())
     val authState: StateFlow<UserAccount?> = _authState.asStateFlow()
