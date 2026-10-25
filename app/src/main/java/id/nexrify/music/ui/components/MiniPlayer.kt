@@ -1,6 +1,6 @@
 package id.nexrify.music.ui.components
 
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,6 +41,7 @@ import id.nexrify.music.ui.theme.DarkCard
 import id.nexrify.music.ui.theme.MutedText
 import id.nexrify.music.ui.theme.PureWhite
 import id.nexrify.music.ui.theme.Typography
+import id.nexrify.music.ui.theme.NexrifyAppTheme
 
 @Composable
 fun MiniPlayer(
@@ -53,7 +54,7 @@ fun MiniPlayer(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colors = _root_.id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
 
     Column(
         modifier = modifier
@@ -66,15 +67,14 @@ fun MiniPlayer(
             // Geser ke atas -> Mini Player berkembang menjadi Now Playing
             .pointerInput(Unit) {
                 var total = 0f
-                detectVerticalDragGestures(
+                detectDragGestures(
                     onDragStart = { total = 0f },
                     onDragEnd = { if (total < -40f) onClick() },
-                    onDragCancel = { total = 0f },
-                    onVerticalDrag = { change, dragAmount ->
-                        change.consume()
-                        total += dragAmount
-                    }
-                )
+                    onDragCancel = { total = 0f }
+                ) { change, dragAmount ->
+                    change.consume()
+                    total += dragAmount.y
+                }
             }
     ) {
         LinearProgressIndicator(
