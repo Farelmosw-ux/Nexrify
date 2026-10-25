@@ -14,10 +14,11 @@ import org.json.JSONObject
 import java.io.File
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
+import id.nexrify.music.data.remote.HttpClientProvider
 
 class LyricsRepository(private val context: Context) {
 
-    private val httpClient = _root_.id.nexrify.music.data.remote.HttpClientProvider.client
+    private val httpClient = HttpClientProvider.client
 
     private val memCache = LruCache<String, LyricsData>(100)
     private val negativeCache = LruCache<String, Long>(200)
