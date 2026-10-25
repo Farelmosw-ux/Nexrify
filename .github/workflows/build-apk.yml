@@ -40,12 +40,11 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.NEXRIFY_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/nexrify.keystore"
+          if [ -n "$KEYSTORE_BASE64" ] && echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/nexrify.keystore" 2>/dev/null; then
             echo "NEXRIFY_STORE_FILE=$RUNNER_TEMP/nexrify.keystore" >> "$GITHUB_ENV"
             echo "Keystore ditemukan, APK release akan ditandatangani."
           else
-            echo "Secret keystore belum diisi, APK release memakai tanda tangan debug."
+            echo "::warning::Keystore tidak valid atau kosong, release memakai tanda tangan debug."
           fi
 
       - name: Build Release & Debug APKs
