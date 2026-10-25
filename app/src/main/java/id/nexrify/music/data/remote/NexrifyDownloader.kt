@@ -10,6 +10,7 @@ import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
 import java.io.File
 import java.util.concurrent.TimeUnit
+import id.nexrify.music.data.auth.AuthManager
 
 class NexrifyDownloader private constructor(context: Context? = null) : Downloader() {
 
@@ -49,7 +50,7 @@ class NexrifyDownloader private constructor(context: Context? = null) : Download
 
         // Inject YouTube auth cookies & SAPISID header if user is logged in
         try {
-            val auth = _root_.id.nexrify.music.data.auth.AuthManager.getInstance()
+            val auth = AuthManager.getInstance()
             val cookie = auth.getCookie()
             if (!cookie.isNullOrBlank() && url.contains("youtube.com") && !url.contains("googlevideo.com")) {
                 if (headers["Cookie"] == null && headers["cookie"] == null) {
