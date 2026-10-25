@@ -9,6 +9,8 @@ import coil.request.CachePolicy
 import id.nexrify.music.data.auth.AuthManager
 import id.nexrify.music.data.remote.NexrifyDownloader
 import org.schabi.newpipe.extractor.NewPipe
+import id.nexrify.music.data.settings.SettingsManager
+import id.nexrify.music.viewmodel.MusicViewModel
 
 class NexrifyApp : Application(), ImageLoaderFactory {
 
@@ -17,8 +19,8 @@ class NexrifyApp : Application(), ImageLoaderFactory {
      * next/prev dari notifikasi, headset, dan widget tetap bekerja walau Activity ditutup
      * selagi musik masih berjalan di latar belakang.
      */
-    val musicViewModel: _root_.id.nexrify.music.viewmodel.MusicViewModel by lazy {
-        _root_.id.nexrify.music.viewmodel.MusicViewModel(this)
+    val musicViewModel: MusicViewModel by lazy {
+        MusicViewModel(this)
     }
 
     companion object {
@@ -30,7 +32,7 @@ class NexrifyApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         AuthManager.init(this)
-        _root_.id.nexrify.music.data.settings.SettingsManager.init(this)
+        SettingsManager.init(this)
         val downloader = NexrifyDownloader.init(this)
         NewPipe.init(downloader)
     }
