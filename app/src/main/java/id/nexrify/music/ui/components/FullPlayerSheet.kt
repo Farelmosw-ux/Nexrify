@@ -82,6 +82,7 @@ import id.nexrify.music.ui.theme.NexrifyAppTheme
 import id.nexrify.music.ui.theme.Typography
 import id.nexrify.music.viewmodel.MusicViewModel
 import kotlinx.coroutines.launch
+import id.nexrify.music.data.audio.OutputType
 
 @Composable
 fun FullPlayerSheet(
@@ -443,9 +444,9 @@ fun FullPlayerSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val icon = when (audioDeviceState.iconType) {
-                        _root_.id.nexrify.music.data.audio.OutputType.WIRED -> Icons.Outlined.Headphones
-                        _root_.id.nexrify.music.data.audio.OutputType.BLUETOOTH -> Icons.Outlined.BluetoothAudio
-                        _root_.id.nexrify.music.data.audio.OutputType.SPEAKER -> Icons.Outlined.VolumeUp
+                        OutputType.WIRED -> Icons.Outlined.Headphones
+                        OutputType.BLUETOOTH -> Icons.Outlined.BluetoothAudio
+                        OutputType.SPEAKER -> Icons.Outlined.VolumeUp
                     }
                     Icon(
                         imageVector = icon,
