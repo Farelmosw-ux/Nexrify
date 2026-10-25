@@ -15,6 +15,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
+import id.nexrify.music.data.auth.AuthManager
+import id.nexrify.music.data.settings.AudioQuality
 
 data class ResolvedStream(
     val url: String,
@@ -161,7 +163,7 @@ class MusicRepository {
 
     private fun searchYouTubeMusic(query: String): List<Track> {
         return try {
-            val auth = _root_.id.nexrify.music.data.auth.AuthManager.getInstance()
+            val auth = AuthManager.getInstance()
             val origin = "https://music.youtube.com"
             val cookie = auth.getCookie() ?: ""
             val sapisidHash = auth.getSapisidHash(origin)
@@ -329,7 +331,7 @@ class MusicRepository {
             }
         }
         try {
-            val auth = _root_.id.nexrify.music.data.auth.AuthManager.getInstance()
+            val auth = AuthManager.getInstance()
             val origin = "https://music.youtube.com"
             val cookie = auth.getCookie() ?: ""
             val sapisidHash = auth.getSapisidHash(origin)
@@ -431,7 +433,7 @@ class MusicRepository {
     private suspend fun fetchYouTubeMusicShelves(): List<HomeSection> = withContext(Dispatchers.IO) {
         val result = mutableListOf<HomeSection>()
         try {
-            val auth = _root_.id.nexrify.music.data.auth.AuthManager.getInstance()
+            val auth = AuthManager.getInstance()
             val origin = "https://music.youtube.com"
             val cookie = auth.getCookie() ?: ""
             val sapisidHash = auth.getSapisidHash(origin)
@@ -633,7 +635,7 @@ class MusicRepository {
 
     suspend fun getAudioStreamUrl(
         url: String,
-        quality: _root_.id.nexrify.music.data.settings.AudioQuality = _root_.id.nexrify.music.data.settings.AudioQuality.HIGH
+        quality: AudioQuality = AudioQuality.HIGH
     ): String? = withContext(Dispatchers.IO) {
         val cacheKey = "$url#${quality.name}"
         val now = System.currentTimeMillis()
@@ -651,15 +653,15 @@ class MusicRepository {
             val httpAudios = audioStreams.filter { it.content != null && it.content.startsWith("http") }
 
             val chosenAudio = when (quality) {
-                _root_.id.nexrify.music.data.settings.AudioQuality.LOW -> {
+                AudioQuality.LOW -> {
                     httpAudios.minByOrNull { it.averageBitrate }
                 }
-                _root_.id.nexrify.music.data.settings.AudioQuality.MEDIUM -> {
+                AudioQuality.MEDIUM -> {
                     httpAudios.filter { it.averageBitrate in 90..180 }
                         .minByOrNull { kotlin.math.abs(it.averageBitrate - 128) }
                         ?: httpAudios.sortedBy { it.averageBitrate }.getOrNull(httpAudios.size / 2)
                 }
-                _root_.id.nexrify.music.data.settings.AudioQuality.HIGH -> {
+                AudioQuality.HIGH -> {
                     val m4aStreams = httpAudios.filter {
                         it.format == org.schabi.newpipe.extractor.MediaFormat.M4A ||
                         it.format?.name.equals("m4a", ignoreCase = true) ||
@@ -691,14 +693,14 @@ class MusicRepository {
 
     suspend fun getAudioStream(
         url: String,
-        quality: _root_.id.nexrify.music.data.settings.AudioQuality = _root_.id.nexrify.music.data.settings.AudioQuality.HIGH
+        quality: AudioQuality = AudioQuality.HIGH
     ): ResolvedStream? = withContext(Dispatchers.IO) {
         val streamUrl = getAudioStreamUrl(url, quality) ?: return@withContext null
         val mime = if (streamUrl.contains("audio%2Fwebm") || streamUrl.contains("audio/webm")) {
             "audio/webm"
         } else if (streamUrl.contains("audio%2Fmp4") || streamUrl.contains("audio/mp4") || streamUrl.contains("itag=140") || streamUrl.contains("itag=141") || streamUrl.contains("itag=139")) {
             "audio/mp4"
-        } else if (quality == _root_.id.nexrify.music.data.settings.AudioQuality.HIGH) {
+        } else if (quality == AudioQuality.HIGH) {
             "audio/mp4"
         } else {
             null
@@ -724,7 +726,7 @@ class MusicRepository {
     }
 
     suspend fun getLikedTracks(): List<Track> = withContext(Dispatchers.IO) {
-        val auth = _root_.id.nexrify.music.data.auth.AuthManager.getInstance()
+        val auth = AuthManager.getInstance()
         val cookie = auth.getCookie()
         if (cookie.isNullOrBlank()) return@withContext emptyList()
 
