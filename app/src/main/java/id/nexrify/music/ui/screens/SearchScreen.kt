@@ -63,6 +63,11 @@ import id.nexrify.music.ui.theme.PureWhite
 import id.nexrify.music.ui.theme.SubtleGray
 import id.nexrify.music.ui.theme.Typography
 import id.nexrify.music.viewmodel.MusicViewModel
+import id.nexrify.music.data.model.Track
+import id.nexrify.music.ui.components.AddToPlaylistDialog
+import id.nexrify.music.ui.components.ErrorRetryState
+import id.nexrify.music.ui.components.SearchLoadingState
+import id.nexrify.music.ui.theme.NexrifyAppTheme
 
 @Composable
 fun SearchScreen(
@@ -70,7 +75,7 @@ fun SearchScreen(
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var trackForPlaylist by remember { mutableStateOf<_root_.id.nexrify.music.data.model.Track?>(null) }
+    var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
     val searchResults by viewModel.searchResults.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -80,7 +85,7 @@ fun SearchScreen(
     val favoriteIds by remember(favorites) { androidx.compose.runtime.derivedStateOf { favorites.mapTo(HashSet()) { it.id } } }
     val focusManager = LocalFocusManager.current
 
-    val colors = _root_.id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val colors = NexrifyAppTheme.colors
 
     val browseCategories = listOf(
         "Top Global Hits",
@@ -227,7 +232,7 @@ fun SearchScreen(
         if (suggestions.isEmpty()) {
             if (isSearching) {
                 // Indikator loading + placeholder saat mencari lagu
-                _root_.id.nexrify.music.ui.components.SearchLoadingState()
+                SearchLoadingState()
             } else if (searchResults.isEmpty() && searchQuery.isBlank()) {
                 // Browse Categories Grid (Apple Music / Spotify Style)
                 Column(
@@ -278,7 +283,7 @@ fun SearchScreen(
                 }
             } else if (searchResults.isEmpty()) {
                 if (searchQuery.isNotBlank()) {
-                    _root_.id.nexrify.music.ui.components.ErrorRetryState(
+                    ErrorRetryState(
                         message = "Tidak ada lagu ditemukan untuk \"$searchQuery\", atau koneksi sedang bermasalah.",
                         onRetry = { viewModel.search(searchQuery) }
                     )
@@ -307,7 +312,7 @@ fun SearchScreen(
     }
 
     if (trackForPlaylist != null) {
-        _root_.id.nexrify.music.ui.components.AddToPlaylistDialog(
+        AddToPlaylistDialog(
             track = trackForPlaylist!!,
             viewModel = viewModel,
             onDismiss = { trackForPlaylist = null }
