@@ -36,6 +36,15 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import id.nexrify.music.data.audio.AudioOutputManager
+import id.nexrify.music.data.auth.AuthManager
+import id.nexrify.music.data.lyrics.LyricsData
+import id.nexrify.music.data.lyrics.LyricsRepository
+import id.nexrify.music.data.model.HomeSection
+import id.nexrify.music.data.playlist.Playlist
+import id.nexrify.music.data.playlist.PlaylistManager
+import id.nexrify.music.data.recommendation.TasteManager
+import id.nexrify.music.data.settings.SettingsManager
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -61,7 +70,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _isPlayerExpanded = MutableStateFlow(false)
     val isPlayerExpanded = _isPlayerExpanded.asStateFlow()
 
-    private val _homeSections = MutableStateFlow<List<_root_.id.nexrify.music.data.model.HomeSection>>(emptyList())
+    private val _homeSections = MutableStateFlow<List<HomeSection>>(emptyList())
     val homeSections = _homeSections.asStateFlow()
 
     private val _trendingTracks = MutableStateFlow<List<Track>>(emptyList())
@@ -135,21 +144,21 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode = _repeatMode.asStateFlow()
 
-    val authState = _root_.id.nexrify.music.data.auth.AuthManager.getInstance().authState
+    val authState = AuthManager.getInstance().authState
 
-    val settingsManager = _root_.id.nexrify.music.data.settings.SettingsManager.getInstance()
+    val settingsManager = SettingsManager.getInstance()
     val themeMode = settingsManager.themeMode
     val audioQuality = settingsManager.audioQuality
 
-    val audioOutputManager = _root_.id.nexrify.music.data.audio.AudioOutputManager.getInstance(getApplication())
+    val audioOutputManager = AudioOutputManager.getInstance(getApplication())
     val audioDeviceState = audioOutputManager.deviceState
     fun openAudioOutputSettings() = audioOutputManager.openAudioSettings()
 
-    val tasteManager = _root_.id.nexrify.music.data.recommendation.TasteManager.getInstance(getApplication())
+    val tasteManager = TasteManager.getInstance(getApplication())
     val recentlyPlayed = tasteManager.recentlyPlayed
     val onRepeatTracks = tasteManager.onRepeatTracks
 
-    val playlistManager = _root_.id.nexrify.music.data.playlist.PlaylistManager.getInstance(getApplication())
+    val playlistManager = PlaylistManager.getInstance(getApplication())
     val playlists = playlistManager.playlists
 
     fun createPlaylist(name: String) = playlistManager.createPlaylist(name)
@@ -158,16 +167,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun addTrackToPlaylist(id: String, track: Track) = playlistManager.addTrackToPlaylist(id, track)
     fun removeTrackFromPlaylist(id: String, trackId: String) = playlistManager.removeTrackFromPlaylist(id, trackId)
 
-    fun playPlaylist(playlist: _root_.id.nexrify.music.data.playlist.Playlist, startTrack: Track? = null, shuffle: Boolean = false) {
+    fun playPlaylist(playlist: Playlist, startTrack: Track? = null, shuffle: Boolean = false) {
         if (playlist.tracks.isEmpty()) return
         val list = if (shuffle) playlist.tracks.shuffled() else playlist.tracks
         val initialTrack = startTrack ?: list.first()
         playTrack(initialTrack, list)
     }
 
-    val lyricsRepository = _root_.id.nexrify.music.data.lyrics.LyricsRepository(getApplication())
+    val lyricsRepository = LyricsRepository(getApplication())
 
-    private val _currentLyrics = MutableStateFlow<_root_.id.nexrify.music.data.lyrics.LyricsData?>(null)
+    private val _currentLyrics = MutableStateFlow<LyricsData?>(null)
     val currentLyrics = _currentLyrics.asStateFlow()
 
     private val _isLoadingLyrics = MutableStateFlow(false)
@@ -637,7 +646,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val rawShelves = repository.getHomeShelves().toMutableList()
             val onRepeat = tasteManager.onRepeatTracks.value
             if (onRepeat.isNotEmpty()) {
-                rawShelves.add(0, _root_.id.nexrify.music.data.model.HomeSection(
+                rawShelves.add(0, HomeSection(
                     title = "Lagi Sering Kamu Putar",
                     subtitle = "Berdasarkan selera musikmu",
                     tracks = onRepeat
@@ -1000,7 +1009,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun logout() {
-        _root_.id.nexrify.music.data.auth.AuthManager.getInstance().logout()
+        AuthManager.getInstance().logout()
     }
 
     override fun onCleared() {
