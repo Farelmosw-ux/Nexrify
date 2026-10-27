@@ -219,9 +219,9 @@ class TasteManager private constructor(context: Context) {
 
     fun getUniqueArtistsCount(): Int {
         val artists = mutableSetOf<String>()
-        trackDataMap.values.forEach {
-            val a = it.artist.trim()
-            if (a.isNotBlank()) artists.add(a)
+        trackDataMap.forEach { (id, track) ->
+            val a = track.artist.trim()
+            if ((playsMap[id] ?: 0) > 0 && a.isNotBlank()) artists.add(a)
         }
         return artists.size
     }
