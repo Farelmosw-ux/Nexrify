@@ -35,7 +35,7 @@ class AuthManager private constructor(private val context: Context) {
 
     private fun loadStoredAccount(): UserAccount? {
         val cookie = prefs.getString(KEY_COOKIE, null) ?: return null
-        var name = prefs.getString(KEY_NAME, "YouTube User") ?: "YouTube User"
+        var name = prefs.getString(KEY_NAME, "") ?: ""
         var email = prefs.getString(KEY_EMAIL, "") ?: ""
         var handle = prefs.getString(KEY_HANDLE, "") ?: ""
         val avatar = prefs.getString(KEY_AVATAR, "") ?: ""
@@ -51,6 +51,9 @@ class AuthManager private constructor(private val context: Context) {
             handle = parseRawJsonRuns(handle)
         }
 
+        if (name.isBlank() || name.equals("YouTube User", ignoreCase = true)) {
+            name = email.substringBefore('@').takeIf { it.isNotBlank() } ?: "Nexrify User"
+        }
         return UserAccount(name, email, handle, avatar, cookie)
     }
 
@@ -125,8 +128,10 @@ class AuthManager private constructor(private val context: Context) {
 
     fun updateProfile(name: String, email: String, avatarUrl: String) {
         val current = _authState.value ?: return
-        val newName = if (name.isNotBlank()) name else current.name
-        val newEmail = if (email.isNotBlank()) email else current.email
+        val candidateName = name.trim()
+        val newEmail = if (email.isNotBlank()) email.trim() else current.email
+        val newName = if (candidateName.isNotBlank() && !candidateName.equals("YouTube User", true)) candidateName
+            else newEmail.substringBefore('@').takeIf { it.isNotBlank() } ?: current.name.takeIf { it.isNotBlank() } ?: "Nexrify User"
         val newAvatar = if (avatarUrl.isNotBlank()) avatarUrl else current.avatarUrl
 
         prefs.edit()
