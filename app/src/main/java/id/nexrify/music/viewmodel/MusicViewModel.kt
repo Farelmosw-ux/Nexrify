@@ -219,6 +219,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     playTrack(pending)
                 }
                 mediaController?.addListener(object : Player.Listener {
+                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                        syncTrackFromController()
+                    }
+
+                    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+                        syncTrackFromController()
+                    }
+
                     override fun onIsPlayingChanged(playing: Boolean) {
                         _isPlaying.value = playing
                         if (playing) {
@@ -327,10 +335,58 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 })
+                // The service can outlive the Activity after it is swiped from Recents.
+                // Rehydrate UI state immediately from its live MediaSession instead of
+                // assuming that an empty ViewModel means playback has stopped.
+                syncTrackFromController()
+                mediaController?.let { controller ->
+                    _isPlaying.value = controller.isPlaying
+                    _playbackPosition.value = controller.currentPosition.coerceAtLeast(0L)
+                    if (controller.duration > 0L) _duration.value = controller.duration
+                    if (controller.isPlaying) startProgressTracking()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }, MoreExecutors.directExecutor())
+    }
+
+    private fun syncTrackFromController() {
+        val controller = mediaController ?: return
+        val item = controller.currentMediaItem ?: return
+        val metadata = item.mediaMetadata
+        val title = metadata.title?.toString().orEmpty()
+        val artist = metadata.artist?.toString().orEmpty()
+        if (title.isBlank() && artist.isBlank()) return
+        val mediaId = item.mediaId.takeIf { it.isNotBlank() } ?: item.localConfiguration?.uri?.toString().orEmpty()
+        val artwork = metadata.artworkUri?.toString().orEmpty()
+        val existing = _currentTrack.value
+        val recovered = if (existing != null && existing.id == mediaId) {
+            existing.copy(
+                title = title.ifBlank { existing.title },
+                artist = artist.ifBlank { existing.artist },
+                thumbnailUrl = artwork.ifBlank { existing.thumbnailUrl },
+                streamUrl = item.localConfiguration?.uri?.toString() ?: existing.streamUrl,
+                durationSeconds = if (controller.duration > 0L) controller.duration / 1000L else existing.durationSeconds
+            )
+        } else {
+            Track(
+                id = mediaId,
+                url = mediaId,
+                title = title.ifBlank { "Unknown track" },
+                artist = artist.ifBlank { "Unknown artist" },
+                thumbnailUrl = artwork,
+                durationSeconds = if (controller.duration > 0L) controller.duration / 1000L else 0L,
+                streamUrl = item.localConfiguration?.uri?.toString(),
+                isFavorite = _favorites.value.any { it.id == mediaId }
+            )
+        }
+        _currentTrack.value = recovered
+        _isPlaying.value = controller.isPlaying
+        _playbackPosition.value = controller.currentPosition.coerceAtLeast(0L)
+        if (controller.duration > 0L) _duration.value = controller.duration
+        if (controller.playbackState == Player.STATE_BUFFERING) _isLoadingTrack.value = true
+        else if (controller.playbackState == Player.STATE_READY) _isLoadingTrack.value = false
     }
 
     private var isSeeking = false
