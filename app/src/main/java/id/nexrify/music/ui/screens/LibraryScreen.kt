@@ -70,6 +70,7 @@ fun LibraryScreen(
     val isLoadingTrack by viewModel.isLoadingTrack.collectAsState()
     val currentTrack by viewModel.currentTrack.collectAsState()
     val currentAccount by viewModel.authState.collectAsState()
+    val syncStatus by viewModel.syncLikedSongsStatus.collectAsState()
 
     var selectedTab by remember { mutableStateOf(0) } // 0: Liked Songs, 1: Playlists
     var selectedPlaylistId by remember { mutableStateOf<String?>(null) }
@@ -144,6 +145,15 @@ fun LibraryScreen(
                         )
                     }
                 }
+            }
+
+            if (selectedTab == 0 && syncStatus != null) {
+                Text(
+                    text = syncStatus.orEmpty(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    style = Typography.bodySmall,
+                    color = colors.textMuted
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
