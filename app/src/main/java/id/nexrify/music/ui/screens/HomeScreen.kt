@@ -101,54 +101,50 @@ fun HomeScreen(
             .background(colors.background)
             .padding(top = 16.dp)
     ) {
-        // Spotify-Style Top Header: Avatar on the LEFT, and Filter Chips right beside it!
+        // Greeting mengikuti jam lokal perangkat (zona waktu wilayah otomatis).
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AccountTopButton(
-                account = currentAccount,
-                onClick = { showProfileMenu = true }
-            )
+            val hour = java.time.LocalTime.now().hour
+            val greeting = when (hour) {
+                in 4..10 -> "Good morning"
+                in 11..14 -> "Good afternoon"
+                in 15..17 -> "Good evening"
+                else -> "Good night"
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(greeting, style = Typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text("Music that fits right now.", style = Typography.bodyLarge, color = colors.textMuted)
+            }
+            AccountTopButton(account = currentAccount, onClick = { showProfileMenu = true })
+        }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Scrollable Spotify-Style Filter Chips (Pills)
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(genres) { genre ->
-                    val isSelected = selectedGenre == genre
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(if (isSelected) colors.textPrimary else colors.card)
-                            .border(1.dp, if (isSelected) colors.textPrimary else colors.border, RoundedCornerShape(20.dp))
-                            .clickable {
-                                selectedGenre = genre
-                                if (genre == "Semua") {
-                                    viewModel.loadTrending()
-                                } else {
-                                    viewModel.search("$genre music hits")
-                                }
-                            }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = genre,
-                            style = Typography.labelMedium.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium),
-                            fontSize = 13.sp,
-                            color = if (isSelected) colors.background else colors.textPrimary
-                        )
-                    }
+        Spacer(modifier = Modifier.height(12.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(genres) { genre ->
+                val isSelected = selectedGenre == genre
+                Box(
+                    modifier = Modifier.clip(RoundedCornerShape(20.dp))
+                        .background(if (isSelected) colors.textPrimary else colors.card)
+                        .border(1.dp, if (isSelected) colors.textPrimary else colors.border, RoundedCornerShape(20.dp))
+                        .clickable {
+                            selectedGenre = genre
+                            if (genre == "Semua") viewModel.loadTrending() else viewModel.search("$genre music hits")
+                        }
+                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = genre, style = Typography.labelMedium.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium),
+                        fontSize = 13.sp, color = if (isSelected) colors.background else colors.textPrimary)
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(14.dp))
 
         if (selectedGenre != "Semua") {
