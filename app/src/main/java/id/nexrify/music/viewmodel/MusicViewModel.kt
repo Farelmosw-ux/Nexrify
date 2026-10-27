@@ -120,6 +120,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoadingTrending = MutableStateFlow(false)
     val isLoadingTrending = _isLoadingTrending.asStateFlow()
 
+    private val _syncLikedSongsStatus = MutableStateFlow<String?>(null)
+    val syncLikedSongsStatus = _syncLikedSongsStatus.asStateFlow()
+
     private val _isSearching = MutableStateFlow(false)
     val isSearching = _isSearching.asStateFlow()
 
@@ -754,19 +757,33 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun syncLikedSongs() {
         viewModelScope.launch {
-            _isLoadingTrending.value = true
-            val liked = repository.getLikedTracks()
-            if (liked.isNotEmpty()) {
-                val currentFavs = _favorites.value.toMutableList()
-                liked.forEach { track ->
-                    if (currentFavs.none { it.id == track.id }) {
-                        currentFavs.add(track.copy(isFavorite = true))
-                    }
-                }
-                _favorites.value = currentFavs
-                saveStoredFavorites(currentFavs)
+            if (!id.nexrify.music.data.auth.AuthManager.getInstance().isLoggedIn()) {
+                _syncLikedSongsStatus.value = "Masuk ke akun YouTube terlebih dahulu untuk menyinkronkan lagu."
+                return@launch
             }
-            _isLoadingTrending.value = false
+            _isLoadingTrending.value = true
+            _syncLikedSongsStatus.value = "Menyinkronkan lagu favorit dari YouTube Music…"
+            try {
+                val liked = repository.getLikedTracks()
+                if (liked.isNotEmpty()) {
+                    val currentFavs = _favorites.value.toMutableList()
+                    liked.forEach { track ->
+                        if (currentFavs.none { it.id == track.id }) {
+                            currentFavs.add(track.copy(isFavorite = true))
+                        }
+                    }
+                    _favorites.value = currentFavs
+                    saveStoredFavorites(currentFavs)
+                    _syncLikedSongsStatus.value = "Sinkronisasi selesai. ${liked.size} lagu ditemukan."
+                } else {
+                    _syncLikedSongsStatus.value = "Tidak ada lagu yang ditemukan. Periksa koneksi dan akses akun YouTube Music, lalu coba lagi."
+                }
+            } catch (e: Exception) {
+                Log.e("NexrifyVM", "Sync YouTube liked songs failed", e)
+                _syncLikedSongsStatus.value = "Sinkronisasi gagal. Periksa koneksi dan coba lagi."
+            } finally {
+                _isLoadingTrending.value = false
+            }
         }
     }
 
