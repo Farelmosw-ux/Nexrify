@@ -34,13 +34,29 @@ class NexrifyWidgetProvider : AppWidgetProvider() {
         private const val ACTION_PREV = "id.nexrify.music.WIDGET_PREV"
         private const val ACTION_PLAY = "id.nexrify.music.WIDGET_PLAY"
         private const val ACTION_NEXT = "id.nexrify.music.WIDGET_NEXT"
+        @Volatile private var cachedArtwork: android.graphics.Bitmap? = null
+        @Volatile private var cachedArtworkTitle: String? = null
 
         fun save(context: Context, title: String, artist: String, playing: Boolean) {
+            if (title != cachedArtworkTitle) {
+                cachedArtwork = null
+                cachedArtworkTitle = title
+            }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putString("title", title)
                 .putString("artist", artist)
                 .putBoolean("playing", playing)
                 .apply()
+        }
+
+        fun updateArtwork(context: Context, bitmap: android.graphics.Bitmap) {
+            cachedArtwork = bitmap
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, NexrifyWidgetProvider::class.java))
+            if (ids.isEmpty()) return
+            val views = buildViews(context)
+            views.setImageViewBitmap(R.id.widget_artwork, bitmap)
+            ids.forEach { manager.updateAppWidget(it, views) }
         }
 
         fun refresh(context: Context) {
@@ -58,6 +74,9 @@ class NexrifyWidgetProvider : AppWidgetProvider() {
             val playing = prefs.getBoolean("playing", false)
 
             val views = RemoteViews(context.packageName, R.layout.widget_player)
+            val artwork = cachedArtwork
+            if (artwork != null) views.setImageViewBitmap(R.id.widget_artwork, artwork)
+            else views.setImageViewResource(R.id.widget_artwork, R.mipmap.ic_launcher)
             views.setTextViewText(R.id.widget_title, if (title.isBlank()) "Nexrify" else title)
             views.setTextViewText(
                 R.id.widget_artist,
