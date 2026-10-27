@@ -36,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import coil.compose.AsyncImage
 import id.nexrify.music.R
 import id.nexrify.music.data.auth.UserAccount
@@ -94,6 +96,13 @@ fun HomeScreen(
     val genres = listOf("Semua", "Pop", "Lo-Fi", "Rock", "Acoustic", "Anime", "Hip-Hop", "R&B", "Top Global")
 
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    var localNow by remember { mutableStateOf(java.time.ZonedDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            localNow = java.time.ZonedDateTime.now()
+            delay(30_000L)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -106,17 +115,38 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val hour = java.time.LocalTime.now().hour
-            val greeting = when (hour) {
-                in 4..10 -> "Good morning"
-                in 11..14 -> "Good afternoon"
-                in 15..17 -> "Good evening"
-                else -> "Good night"
+            val hour = localNow.hour
+            val minute = localNow.minute
+            val greeting = when {
+                hour == 0 && minute == 0 -> "Midnight"
+                hour == 12 && minute == 0 -> "Midday"
+                hour in 0..3 -> "Early Morning"
+                hour in 4..5 -> "Before Sunrise"
+                hour in 6..9 -> "Morning"
+                hour == 10 -> "Late Morning"
+                hour in 11..14 -> "Afternoon"
+                hour in 15..17 -> "Late Afternoon"
+                hour in 18..18 -> "Evening"
+                hour in 19..22 -> "Night"
+                else -> "Late Night"
+            }
+            val description = when (greeting) {
+                "Early Morning" -> "Masih melek? Temani dini harimu dengan musik di Nexrify."
+                "Before Sunrise" -> "Menyambut pagi? Mulai harimu dengan musik pilihan di Nexrify."
+                "Morning" -> "Awali harimu dengan irama yang bikin semangat bersama Nexrify."
+                "Late Morning" -> "Aktivitas mulai padat? Biar musik Nexrify yang nemenin."
+                "Afternoon" -> if (hour == 12 && minute == 0) "Masih begadang? Temani sunyinya malam dengan musik di Nexrify." else "Lagi istirahat? Putar lagu favoritmu dan nikmati waktumu."
+                "Late Afternoon" -> "Santai sejenak, nikmati suasana sore bersama musik di Nexrify."
+                "Evening" -> "Langit mulai gelap, waktunya menikmati musik dan melepas penat."
+                "Night" -> "Nikmati malam dengan lagu yang cocok untuk suasana hatimu."
+                "Late Night" -> "Saatnya bersantai, biarkan musik Nexrify menemani malammu."
+                "Midnight" -> "Belum tidur? Temukan irama yang pas untuk menemani malammu."
+                else -> "Music that fits right now."
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(greeting, style = Typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("Music that fits right now.", style = Typography.bodyLarge, color = colors.textMuted)
+                Text(description, style = Typography.bodyLarge, color = colors.textMuted)
             }
             AccountTopButton(account = currentAccount, onClick = { showProfileMenu = true })
         }
@@ -300,7 +330,14 @@ fun HomeScreen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(100.dp))
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
+                        Text(
+                            text = "Source code Nexrify bersifat privat dan tidak tersedia untuk dibagikan secara gratis. Aplikasi dapat diunduh melalui tautan resmi yang disediakan oleh pengembang.",
+                            style = Typography.bodySmall,
+                            color = colors.textMuted
+                        )
+                        Spacer(modifier = Modifier.height(100.dp))
+                    }
                 }
             }
         } else {
@@ -410,6 +447,13 @@ fun YtmMusicCard(
     modifier: Modifier = Modifier
 ) {
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    var localNow by remember { mutableStateOf(java.time.ZonedDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            localNow = java.time.ZonedDateTime.now()
+            delay(30_000L)
+        }
+    }
 
     Column(
         modifier = modifier
