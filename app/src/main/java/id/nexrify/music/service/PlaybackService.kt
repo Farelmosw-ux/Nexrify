@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import androidx.annotation.OptIn
@@ -22,11 +23,17 @@ import androidx.media3.session.MediaSessionService
 import id.nexrify.music.MainActivity
 import id.nexrify.music.NexrifyWidgetProvider
 import id.nexrify.music.R
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.Executors
 
 class PlaybackService : MediaSessionService() {
 
     private var player: Player? = null
     private var mediaSession: MediaSession? = null
+    private val artworkExecutor = Executors.newSingleThreadExecutor()
+    @Volatile private var latestArtworkUrl: String? = null
+    @Volatile private var latestArtworkTitle: String? = null
 
     companion object {
         const val CHANNEL_ID = "nexrify_playback_channel"
@@ -163,8 +170,39 @@ class PlaybackService : MediaSessionService() {
         val metadata = player.mediaMetadata
         val title = metadata.title?.toString().orEmpty()
         val artist = metadata.artist?.toString().orEmpty()
+        val artworkUrl = metadata.artworkUri?.toString().orEmpty()
         NexrifyWidgetProvider.save(this, title, artist, player.isPlaying)
         NexrifyWidgetProvider.refresh(this)
+
+        // RemoteViews cannot load a network image itself. Fetch artwork off the main thread
+        // and only apply it if it still belongs to the current track.
+        if (artworkUrl.isNotBlank() && (artworkUrl != latestArtworkUrl || title != latestArtworkTitle)) {
+            latestArtworkUrl = artworkUrl
+            latestArtworkTitle = title
+            artworkExecutor.execute {
+                var connection: HttpURLConnection? = null
+                try {
+                    connection = (URL(artworkUrl).openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 8_000
+                        readTimeout = 8_000
+                        instanceFollowRedirects = true
+                    }
+                    val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                    if (bitmap != null && latestArtworkUrl == artworkUrl) {
+                        NexrifyWidgetProvider.updateArtwork(this, bitmap)
+                    }
+                } catch (e: Exception) {
+                    Log.w("NexrifyPlaybackService", "Unable to load widget artwork", e)
+                } finally {
+                    connection?.disconnect()
+                }
+            }
+        }
+    }
+
+    /** Keep the media session alive when the user swipes the app task away during playback. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (player?.isPlaying != true) super.onTaskRemoved(rootIntent)
     }
 
     private fun createNotificationChannel() {
@@ -193,6 +231,7 @@ class PlaybackService : MediaSessionService() {
             mediaSession = null
         }
         player = null
+        artworkExecutor.shutdownNow()
         super.onDestroy()
     }
 }
