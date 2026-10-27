@@ -83,14 +83,14 @@ fun SearchScreen(
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
 
     val browseCategories = listOf(
-        "Top Global Hits",
-        "Lo-Fi Chill Beats",
+        "Hits Global",
+        "Lo-Fi & Santai",
         "Anime & J-Pop",
-        "Hip-Hop Classics",
-        "Acoustic & Folk",
-        "Deep Focus & Study",
-        "Rock & Alternative",
-        "Electronic & Dance"
+        "Fokus Mendalam",
+        "Hip-Hop & R&B",
+        "Akustik & Folk",
+        "Rock & Alternatif",
+        "Elektronik & EDM"
     )
 
     Column(
@@ -240,7 +240,7 @@ fun SearchScreen(
                         .padding(horizontal = 16.dp)
                 ) {
                     Text(
-                        text = "Browse Categories",
+                        text = "Jelajahi Musik",
                         style = Typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
@@ -257,7 +257,7 @@ fun SearchScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .aspectRatio(1.8f)
+                                    .aspectRatio(2.25f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(colors.card)
                                     .border(1.dp, colors.border, RoundedCornerShape(12.dp))
@@ -266,16 +266,37 @@ fun SearchScreen(
                                         focusManager.clearFocus()
                                         viewModel.search(category)
                                     }
-                                    .padding(14.dp),
+                                    .padding(horizontal = 16.dp, vertical = 16.dp),
                                 contentAlignment = Alignment.BottomStart
                             ) {
-                                Text(
-                                    text = category,
-                                    style = Typography.titleMedium,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colors.textPrimary
-                                )
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        text = category,
+                                        style = Typography.titleMedium,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = colors.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = when (category) {
+                                            "Hits Global" -> "Lagu populer saat ini"
+                                            "Lo-Fi & Santai" -> "Temani waktu rehat"
+                                            "Anime & J-Pop" -> "Soundtrack dan lagu Jepang"
+                                            "Fokus Mendalam" -> "Belajar dan coding"
+                                            "Hip-Hop & R&B" -> "Beat dan ritme pilihan"
+                                            "Akustik & Folk" -> "Suara hangat dan natural"
+                                            "Rock & Alternatif" -> "Energi dan gitar kuat"
+                                            else -> "Elektronik dan suasana festival"
+                                        },
+                                        style = Typography.bodySmall,
+                                        color = colors.textMuted,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
