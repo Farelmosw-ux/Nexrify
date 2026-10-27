@@ -177,6 +177,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private var pendingTrackToPlay: Track? = null
     private var hasRetriedFallback = false
     private var trackStartTime = 0L
+    private var lastRecordedPlaybackStart = -1L
 
     private val mediaActionReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
@@ -223,6 +224,13 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         if (playing) {
                             _isLoadingTrack.value = false
                             startProgressTracking()
+                            // Record a play when playback actually starts, not only when the song ends.
+                            val startedAt = trackStartTime
+                            val track = _currentTrack.value
+                            if (track != null && startedAt > 0L && startedAt != lastRecordedPlaybackStart) {
+                                lastRecordedPlaybackStart = startedAt
+                                tasteManager.recordTrackPlayed(track)
+                            }
                         } else {
                             stopProgressTracking()
                         }
@@ -264,7 +272,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                             }
                             Player.STATE_ENDED -> {
                                 _isLoadingTrack.value = false
-                                _currentTrack.value?.let { tasteManager.recordTrackPlayed(it) }
                                 skipNext()
                             }
                             Player.STATE_IDLE -> {
