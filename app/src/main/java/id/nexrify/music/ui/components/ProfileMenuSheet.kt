@@ -69,6 +69,9 @@ fun ProfileMenuSheet(
 
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
     val onRepeatTracks by viewModel.onRepeatTracks.collectAsState()
+    val liveTotalPlays by viewModel.tasteManager.totalPlays.collectAsState()
+    val liveUniqueArtists by viewModel.tasteManager.uniqueArtistsCount.collectAsState()
+    val liveTopArtists by viewModel.tasteManager.topArtists.collectAsState()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -267,10 +270,10 @@ fun ProfileMenuSheet(
 
     // Listening Stats Dialog
     if (showStatsDialog) {
-        // Read current persisted listening data each time the dialog is composed.
-        val totalPlays = viewModel.tasteManager.getTotalPlays()
-        val uniqueArtists = viewModel.tasteManager.getUniqueArtistsCount()
-        val topArtists = viewModel.tasteManager.getTopArtists(5)
+        // Observe persisted listening statistics so the dialog updates as playback is recorded.
+        val totalPlays = liveTotalPlays
+        val uniqueArtists = liveUniqueArtists
+        val topArtists = liveTopArtists
 
         AlertDialog(
             onDismissRequest = { showStatsDialog = false },
