@@ -20,6 +20,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import id.nexrify.music.MainActivity
+import id.nexrify.music.NexrifyWidgetProvider
 import id.nexrify.music.R
 
 class PlaybackService : MediaSessionService() {
