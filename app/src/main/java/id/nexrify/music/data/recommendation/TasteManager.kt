@@ -20,6 +20,14 @@ class TasteManager private constructor(context: Context) {
     private val _onRepeatTracks = MutableStateFlow<List<Track>>(emptyList())
     val onRepeatTracks: StateFlow<List<Track>> = _onRepeatTracks.asStateFlow()
 
+    // Observable statistics let the UI update while the statistics dialog is open.
+    private val _totalPlays = MutableStateFlow(0)
+    val totalPlays: StateFlow<Int> = _totalPlays.asStateFlow()
+    private val _uniqueArtistsCount = MutableStateFlow(0)
+    val uniqueArtistsCount: StateFlow<Int> = _uniqueArtistsCount.asStateFlow()
+    private val _topArtists = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
+    val topArtists: StateFlow<List<Pair<String, Int>>> = _topArtists.asStateFlow()
+
     // In-memory caches to eliminate repeated JSON serialization/deserialization
     private val scoresMap = ConcurrentHashMap<String, Int>()
     private val playsMap = ConcurrentHashMap<String, Int>()
@@ -34,24 +42,28 @@ class TasteManager private constructor(context: Context) {
         updateTrackScore(track, deltaScore = 3, isPlay = true)
         addToRecents(track)
         refreshOnRepeat()
+        refreshStatistics()
     }
 
     @Synchronized
     fun recordTrackLiked(track: Track) {
         updateTrackScore(track, deltaScore = 5, isPlay = false)
         refreshOnRepeat()
+        refreshStatistics()
     }
 
     @Synchronized
     fun recordTrackRepeated(track: Track) {
         updateTrackScore(track, deltaScore = 4, isPlay = true)
         refreshOnRepeat()
+        refreshStatistics()
     }
 
     @Synchronized
     fun recordTrackSkipped(track: Track) {
         updateTrackScore(track, deltaScore = -2, isPlay = false)
         refreshOnRepeat()
+        refreshStatistics()
     }
 
     private fun updateTrackScore(track: Track, deltaScore: Int, isPlay: Boolean) {
@@ -196,7 +208,25 @@ class TasteManager private constructor(context: Context) {
             }
 
             refreshOnRepeat()
+            refreshStatistics()
         } catch (_: Exception) {}
+    }
+
+    @Synchronized
+    private fun refreshStatistics() {
+        _totalPlays.value = playsMap.values.sum()
+        val artists = trackDataMap.entries.mapNotNull { (id, track) ->
+            track.artist.trim().takeIf { it.isNotBlank() && (playsMap[id] ?: 0) > 0 }
+        }.toSet()
+        _uniqueArtistsCount.value = artists.size
+        _topArtists.value = trackDataMap.entries.mapNotNull { (id, track) ->
+            val count = playsMap[id] ?: 0
+            val artist = track.artist.trim()
+            if (count > 0 && artist.isNotBlank()) artist to count else null
+        }.groupBy({ it.first }, { it.second })
+            .map { it.key to it.value.sum() }
+            .sortedByDescending { it.second }
+            .take(5)
     }
 
     fun getTotalPlays(): Int {
