@@ -83,6 +83,7 @@ fun HomeScreen(
     val isLoadingTrack by viewModel.isLoadingTrack.collectAsState()
     val currentTrack by viewModel.currentTrack.collectAsState()
     val currentAccount by viewModel.authState.collectAsState()
+    val currentLanguage by viewModel.settingsManager.language.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
     val favoriteIds by remember(favorites) { androidx.compose.runtime.derivedStateOf { favorites.mapTo(HashSet()) { it.id } } }
@@ -115,34 +116,9 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val hour = localNow.hour
-            val minute = localNow.minute
-            val greeting = when {
-                hour == 0 && minute == 0 -> "Midnight"
-                hour == 12 && minute == 0 -> "Midday"
-                hour in 0..3 -> "Early Morning"
-                hour in 4..5 -> "Before Sunrise"
-                hour in 6..9 -> "Morning"
-                hour == 10 -> "Late Morning"
-                hour in 11..14 -> "Afternoon"
-                hour in 15..17 -> "Late Afternoon"
-                hour in 18..18 -> "Evening"
-                hour in 19..22 -> "Night"
-                else -> "Late Night"
-            }
-            val description = when (greeting) {
-                "Early Morning" -> "Masih melek? Temani dini harimu dengan musik di Nexrify."
-                "Before Sunrise" -> "Menyambut pagi? Mulai harimu dengan musik pilihan di Nexrify."
-                "Morning" -> "Awali harimu dengan irama yang bikin semangat bersama Nexrify."
-                "Late Morning" -> "Aktivitas mulai padat? Biar musik Nexrify yang nemenin."
-                "Afternoon" -> if (hour == 12 && minute == 0) "Masih begadang? Temani sunyinya malam dengan musik di Nexrify." else "Lagi istirahat? Putar lagu favoritmu dan nikmati waktumu."
-                "Late Afternoon" -> "Santai sejenak, nikmati suasana sore bersama musik di Nexrify."
-                "Evening" -> "Langit mulai gelap, waktunya menikmati musik dan melepas penat."
-                "Night" -> "Nikmati malam dengan lagu yang cocok untuk suasana hatimu."
-                "Late Night" -> "Saatnya bersantai, biarkan musik Nexrify menemani malammu."
-                "Midnight" -> "Belum tidur? Temukan irama yang pas untuk menemani malammu."
-                else -> "Music that fits right now."
-            }
+            val timeContext = id.nexrify.music.data.settings.TimeContext.resolve(localNow)
+            val greeting = timeContext.period
+            val description = if (viewModel.settingsManager.isEnglish()) timeContext.descriptionEn else timeContext.descriptionId
             Column(modifier = Modifier.weight(1f)) {
                 Text(greeting, style = Typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(2.dp))
