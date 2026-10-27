@@ -13,6 +13,8 @@ enum class ThemeMode {
     SYSTEM, DARK, LIGHT
 }
 
+enum class AppLanguage { SYSTEM, INDONESIAN, ENGLISH }
+
 enum class AudioQuality(val title: String, val description: String) {
     HIGH("High Quality (M4A / 256 kbps)", "Crisp sound, best audio fidelity"),
     MEDIUM("Normal Quality (128 kbps)", "Balanced speed & data usage"),
@@ -31,6 +33,24 @@ class SettingsManager private constructor(private val context: Context) {
 
     private val _autoTranslate = MutableStateFlow(prefs.getBoolean(KEY_AUTO_TRANSLATE, true))
     val autoTranslate: StateFlow<Boolean> = _autoTranslate.asStateFlow()
+
+    private fun loadLanguage(): AppLanguage {
+        val saved = prefs.getString(KEY_LANGUAGE, AppLanguage.SYSTEM.name) ?: AppLanguage.SYSTEM.name
+        return runCatching { AppLanguage.valueOf(saved) }.getOrDefault(AppLanguage.SYSTEM)
+    }
+    private val _language = MutableStateFlow(loadLanguage())
+    val language: StateFlow<AppLanguage> = _language.asStateFlow()
+
+    fun setLanguage(language: AppLanguage) {
+        _language.value = language
+        prefs.edit().putString(KEY_LANGUAGE, language.name).apply()
+    }
+
+    fun isEnglish(): Boolean = when (_language.value) {
+        AppLanguage.ENGLISH -> true
+        AppLanguage.INDONESIAN -> false
+        AppLanguage.SYSTEM -> !java.util.Locale.getDefault().language.equals("id", ignoreCase = true)
+    }
 
     private fun loadThemeMode(): ThemeMode {
         val name = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
@@ -159,6 +179,7 @@ class SettingsManager private constructor(private val context: Context) {
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_AUDIO_QUALITY = "audio_quality"
         private const val KEY_AUTO_TRANSLATE = "lyrics_auto_translate"
+        private const val KEY_LANGUAGE = "app_language"
 
         @Volatile
         private var instance: SettingsManager? = null
