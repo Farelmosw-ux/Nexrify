@@ -247,7 +247,7 @@ fun ProfileMenuSheet(
                 DrawerMenuItem(
                     icon = Icons.Outlined.History,
                     title = "Terakhir Diputar",
-                    subtitle = "${recentlyPlayed.size} lagu baru saja diputar",
+                    subtitle = if (recentlyPlayed.isEmpty()) "Belum ada riwayat pemutaran" else "${recentlyPlayed.size} lagu dalam riwayat",
                     onClick = { showRecentsDialog = true }
                 )
 
@@ -267,9 +267,10 @@ fun ProfileMenuSheet(
 
     // Listening Stats Dialog
     if (showStatsDialog) {
-        val totalPlays = remember(showStatsDialog) { viewModel.tasteManager.getTotalPlays() }
-        val uniqueArtists = remember(showStatsDialog) { viewModel.tasteManager.getUniqueArtistsCount() }
-        val topArtists = remember(showStatsDialog) { viewModel.tasteManager.getTopArtists(5) }
+        // Read current persisted listening data each time the dialog is composed.
+        val totalPlays = viewModel.tasteManager.getTotalPlays()
+        val uniqueArtists = viewModel.tasteManager.getUniqueArtistsCount()
+        val topArtists = viewModel.tasteManager.getTopArtists(5)
 
         AlertDialog(
             onDismissRequest = { showStatsDialog = false },
