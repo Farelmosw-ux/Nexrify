@@ -14,9 +14,12 @@ class NexrifyApplication : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         AuthManager.init(this)
+        id.nexrify.music.data.prayer.MaghribManager.init(this)
         id.nexrify.music.data.settings.SettingsManager.init(this)
         val downloader = NexrifyDownloader.init(this)
         NewPipe.init(downloader)
+        // Segarkan nama dan foto akun Google/YouTube tiap aplikasi dibuka
+        AuthManager.getInstance().refreshProfile()
     }
 
     override fun newImageLoader(): ImageLoader {
