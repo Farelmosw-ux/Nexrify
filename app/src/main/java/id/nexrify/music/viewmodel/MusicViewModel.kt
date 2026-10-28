@@ -146,6 +146,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     val recentlyPlayed = tasteManager.recentlyPlayed
     val onRepeatTracks = tasteManager.onRepeatTracks
 
+    val searchHistoryManager = id.nexrify.music.data.search.SearchHistoryManager(application)
+    val searchHistory = searchHistoryManager.history
+    fun removeSearchHistory(query: String) = searchHistoryManager.remove(query)
+    fun clearSearchHistory() = searchHistoryManager.clear()
+
+    private val _initialLoadDone = MutableStateFlow(false)
+    /** True setelah katalog beranda selesai dimuat pertama kali (berhasil atau gagal). Dipakai layar loading. */
+    val initialLoadDone = _initialLoadDone.asStateFlow()
+
     val playlistManager = id.nexrify.music.data.playlist.PlaylistManager.getInstance(getApplication())
     val playlists = playlistManager.playlists
 
@@ -376,8 +385,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             Track(
                 id = mediaId,
                 url = mediaId,
-                title = title.ifBlank { "Unknown track" },
-                artist = artist.ifBlank { "Unknown artist" },
+                title = title.ifBlank { id.nexrify.music.i18n.currentStrings().unknownTrack },
+                artist = artist.ifBlank { id.nexrify.music.i18n.currentStrings().unknownArtist },
                 thumbnailUrl = artwork,
                 durationSeconds = if (controller.duration > 0L) controller.duration / 1000L else 0L,
                 streamUrl = item.localConfiguration?.uri?.toString(),
@@ -442,6 +451,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             _trendingTracks.value = tracks
             _isLoadingTrending.value = false
+            _initialLoadDone.value = true
 
             // Pre-warm audio URLs for top 2 tracks in background with chosen quality
             launch(Dispatchers.IO) {
@@ -464,6 +474,19 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val list = repository.getSuggestions(query)
             _suggestions.value = list
         }
+    }
+
+    /** Pencarian yang diketik atau dipilih pengguna: dicatat ke riwayat. */
+    fun searchAndRemember(query: String) {
+        searchHistoryManager.add(query)
+        search(query)
+    }
+
+    fun clearSearchResults() {
+        searchJob?.cancel()
+        _isSearching.value = false
+        _suggestions.value = emptyList()
+        _searchResults.value = emptyList()
     }
 
     fun search(query: String) {
@@ -758,11 +781,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun syncLikedSongs() {
         viewModelScope.launch {
             if (!id.nexrify.music.data.auth.AuthManager.getInstance().isLoggedIn()) {
-                _syncLikedSongsStatus.value = "Masuk ke akun YouTube terlebih dahulu untuk menyinkronkan lagu."
+                _syncLikedSongsStatus.value = id.nexrify.music.i18n.currentStrings().syncNeedLogin
                 return@launch
             }
             _isLoadingTrending.value = true
-            _syncLikedSongsStatus.value = "Menyinkronkan lagu favorit dari YouTube Music…"
+            _syncLikedSongsStatus.value = id.nexrify.music.i18n.currentStrings().syncRunning
             try {
                 val liked = repository.getLikedTracks()
                 if (liked.isNotEmpty()) {
@@ -774,13 +797,13 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     _favorites.value = currentFavs
                     saveStoredFavorites(currentFavs)
-                    _syncLikedSongsStatus.value = "Sinkronisasi selesai. ${liked.size} lagu ditemukan."
+                    _syncLikedSongsStatus.value = id.nexrify.music.i18n.currentStrings().syncDone(liked.size)
                 } else {
-                    _syncLikedSongsStatus.value = "Tidak ada lagu yang ditemukan. Periksa koneksi dan akses akun YouTube Music, lalu coba lagi."
+                    _syncLikedSongsStatus.value = id.nexrify.music.i18n.currentStrings().syncEmpty
                 }
             } catch (e: Exception) {
                 Log.e("NexrifyVM", "Sync YouTube liked songs failed", e)
-                _syncLikedSongsStatus.value = "Sinkronisasi gagal. Periksa koneksi dan coba lagi."
+                _syncLikedSongsStatus.value = id.nexrify.music.i18n.currentStrings().syncFailed
             } finally {
                 _isLoadingTrending.value = false
             }
