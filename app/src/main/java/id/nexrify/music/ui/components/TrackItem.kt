@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -20,10 +24,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -150,8 +150,8 @@ fun TrackItem(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (track.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = "Favorite",
+                imageVector = if (track.isFavorite) NexIcons.Favorite else NexIcons.FavoriteBorder,
+                contentDescription = S.cd("Favorite"),
                 tint = if (track.isFavorite) colors.textPrimary else colors.textMuted,
                 modifier = Modifier.size(22.dp)
             )
@@ -170,8 +170,8 @@ fun TrackItem(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More Options",
+                    imageVector = NexIcons.MoreVert,
+                    contentDescription = S.cd("More Options"),
                     tint = colors.textMuted,
                     modifier = Modifier.size(20.dp)
                 )
