@@ -84,6 +84,14 @@ class MusicCapsuleController(
 
     private var draggingSeek = false
     @Volatile private var artworkKey: String? = null
+    private var lastBitmap: Bitmap? = null
+    private var placeholderShown = false
+    private var loadingKey: String? = null
+    private var failedKey: String? = null
+    private var failedAt = 0L
+    private var lastTitle: String? = null
+    private var lastArtist: String? = null
+    private val artworkCache = android.util.LruCache<String, Bitmap>(12)
 
     private val regular: Typeface? = ResourcesCompat.getFont(context, R.font.outfit_regular)
     private val semibold: Typeface? = ResourcesCompat.getFont(context, R.font.outfit_semibold)
@@ -100,7 +108,13 @@ class MusicCapsuleController(
 
     private val ticker = object : Runnable {
         override fun run() {
-            if (!attached || destroyed) return
+            if (destroyed) return
+            if (attached && root?.isAttachedToWindow == false) {
+                refresh()
+                if (!attached) handler.postDelayed(this, 1_000L)
+                return
+            }
+            if (!attached) return
             updateProgress()
             // Kapsul yang dijeda terlalu lama disembunyikan, panel penuh ikut menutup sendiri.
             if (!player.isPlaying && !expanded && System.currentTimeMillis() - pausedSince > PAUSED_HIDE_MS) {
@@ -134,25 +148,52 @@ class MusicCapsuleController(
     /** Dipanggil ulang kapan pun kondisi berubah (lagu, status putar, aplikasi tampil/tidak, izin, pengaturan). */
     fun refresh() {
         if (destroyed) return
+        // Kalau tampilan sempat dilepas sistem, anggap belum terpasang supaya dipasang ulang.
+        if (attached && root?.isAttachedToWindow == false) {
+            root = null
+            params = null
+            attached = false
+            expanded = false
+        }
         if (shouldShow()) {
+            handler.removeCallbacks(hideRunnable)
+            hidePending = false
             attach()
             bind()
-        } else {
+        } else if (mustHideNow()) {
+            handler.removeCallbacks(hideRunnable)
+            hidePending = false
             detach()
+        } else if (attached && !hidePending) {
+            // Kondisi sementara (misalnya pergantian lagu): tunggu sebentar sebelum menyembunyikan kapsul.
+            hidePending = true
+            handler.postDelayed(hideRunnable, HIDE_GRACE_MS)
         }
+    }
+
+    private var hidePending = false
+
+    private val hideRunnable = Runnable {
+        hidePending = false
+        if (!destroyed && !shouldShow()) detach()
     }
 
     // ---------------------------------------------------------------- visibility rules
 
+    /** Alasan yang pasti, bukan sementara: pengaturan mati, izin dicabut, atau Nexrify sedang dibuka. */
+    private fun mustHideNow(): Boolean =
+        !SettingsManager.getInstance().isCapsuleEnabled() || !canDrawOverlays(context) || AppVisibility.inForeground
+
+    private fun hasSession(): Boolean =
+        player.mediaItemCount > 0 || !player.mediaMetadata.title.isNullOrBlank() || lastTitle != null
+
     private fun shouldShow(): Boolean {
-        if (!SettingsManager.getInstance().isCapsuleEnabled()) return false
-        if (!canDrawOverlays(context)) return false
-        if (AppVisibility.inForeground) return false
-        if (player.mediaItemCount == 0 && player.mediaMetadata.title.isNullOrBlank()) return false
-        if (player.isPlaying) return true
+        if (mustHideNow()) return false
+        // Selama musik diputar (termasuk buffering dan pergantian lagu) kapsul tidak boleh hilang.
+        if (player.isPlaying || player.playWhenReady) return true
+        if (player.playbackState == Player.STATE_BUFFERING) return true
         if (expanded) return true
-        val state = player.playbackState
-        if (state == Player.STATE_BUFFERING && player.playWhenReady) return true
+        if (!hasSession()) return false
         return System.currentTimeMillis() - pausedSince <= PAUSED_HIDE_MS
     }
 
@@ -403,47 +444,138 @@ class MusicCapsuleController(
     private fun bind() {
         val view = root ?: return
         val md = player.mediaMetadata
-        titleView.text = md.title?.toString()?.takeIf { it.isNotBlank() } ?: "Nexrify"
-        artistView.text = md.artist?.toString().orEmpty()
-        waveform.setActive(player.isPlaying)
-        playPauseView.setImageResource(if (player.isPlaying) R.drawable.ic_nexrify_pause else R.drawable.ic_nexrify_play)
-        bindArtwork(md)
+        val itemMd = player.currentMediaItem?.mediaMetadata
+
+        // Simpan judul dan artis terakhir: saat pergantian lagu metadata bisa kosong sesaat.
+        val title = md.title?.toString()?.takeIf { it.isNotBlank() }
+            ?: itemMd?.title?.toString()?.takeIf { it.isNotBlank() }
+        val artist = md.artist?.toString()?.takeIf { it.isNotBlank() }
+            ?: itemMd?.artist?.toString()?.takeIf { it.isNotBlank() }
+        if (title != null) {
+            lastTitle = title
+            lastArtist = artist.orEmpty()
+        }
+        titleView.text = lastTitle ?: "Nexrify"
+        artistView.text = lastArtist.orEmpty()
+
+        waveform.setActive(player.isPlaying || (player.playWhenReady && player.playbackState == Player.STATE_BUFFERING))
+        playPauseView.setImageResource(
+            if (player.isPlaying || player.playWhenReady) R.drawable.ic_nexrify_pause else R.drawable.ic_nexrify_play
+        )
+        bindArtwork(md, itemMd)
         updateProgress()
         view.requestLayout()
     }
 
-    private fun bindArtwork(md: MediaMetadata) {
-        val data = md.artworkData
-        val url = md.artworkUri?.toString().orEmpty()
-        val key = if (data != null) "bytes:${data.size}:${md.title}" else url
-        if (key == artworkKey) return
-        artworkKey = key
+    /**
+     * Sampul tidak boleh hilang: gambar lama dipertahankan sampai gambar baru benar benar siap,
+     * hasil unduhan disimpan di cache memori, unduhan gagal dicoba ulang, dan ada placeholder kalau memang belum ada.
+     */
+    private fun bindArtwork(md: MediaMetadata, itemMd: MediaMetadata?) {
+        val data = md.artworkData ?: itemMd?.artworkData
+        val url = (md.artworkUri ?: itemMd?.artworkUri)?.toString().orEmpty()
+
         if (data != null) {
-            BitmapFactory.decodeByteArray(data, 0, data.size)?.let { artView.setImageBitmap(it) }
+            val key = "bytes:${data.size}:${data.contentHashCode()}"
+            if (key == artworkKey) return
+            artworkKey = key
+            decodeSampled(data)?.let { showArtwork(it) }
             return
         }
         if (url.isBlank()) {
-            artView.setImageDrawable(null)
+            // Metadata belum lengkap (biasanya sesaat saat ganti lagu): biarkan sampul sebelumnya tetap tampil.
+            if (lastBitmap == null) showPlaceholder()
             return
         }
+        if (url == artworkKey && lastBitmap != null) return
+
+        artworkCache.get(url)?.let {
+            artworkKey = url
+            showArtwork(it)
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (url == failedKey && now - failedAt < RETRY_BACKOFF_MS) {
+            if (lastBitmap == null) showPlaceholder()
+            return
+        }
+        if (url == loadingKey) return
+        loadingKey = url
+        if (lastBitmap == null) showPlaceholder()
+
         artworkExecutor.execute {
-            var conn: HttpURLConnection? = null
-            try {
-                conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 8_000
-                    readTimeout = 8_000
-                    instanceFollowRedirects = true
+            var bitmap: Bitmap? = null
+            var attempt = 0
+            while (bitmap == null && attempt < 3 && !destroyed) {
+                var conn: HttpURLConnection? = null
+                try {
+                    conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                        connectTimeout = 8_000
+                        readTimeout = 8_000
+                        instanceFollowRedirects = true
+                    }
+                    val bytes = conn.inputStream.use { it.readBytes() }
+                    bitmap = decodeSampled(bytes)
+                } catch (_: Exception) {
+                } finally {
+                    conn?.disconnect()
                 }
-                val bmp: Bitmap? = conn.inputStream.use { BitmapFactory.decodeStream(it) }
-                if (bmp != null) {
-                    handler.post {
-                        if (!destroyed && artworkKey == key) artView.setImageBitmap(bmp)
+                if (bitmap == null) {
+                    attempt++
+                    try {
+                        Thread.sleep(700L * attempt)
+                    } catch (_: InterruptedException) {
+                        return@execute
                     }
                 }
-            } catch (_: Exception) {
-            } finally {
-                conn?.disconnect()
             }
+            handler.post {
+                if (destroyed) return@post
+                loadingKey = null
+                if (bitmap != null) {
+                    artworkCache.put(url, bitmap)
+                    // Hanya tampilkan kalau masih lagu yang sama; kalau sudah ganti, bind berikutnya yang memuat.
+                    val currentUrl = (player.mediaMetadata.artworkUri ?: player.currentMediaItem?.mediaMetadata?.artworkUri)?.toString().orEmpty()
+                    if (currentUrl == url || currentUrl.isBlank()) {
+                        artworkKey = url
+                        showArtwork(bitmap)
+                    }
+                } else {
+                    failedKey = url
+                    failedAt = System.currentTimeMillis()
+                }
+            }
+        }
+    }
+
+    private fun showArtwork(bitmap: Bitmap) {
+        lastBitmap = bitmap
+        if (placeholderShown) {
+            artView.clearColorFilter()
+            artView.scaleType = ImageView.ScaleType.CENTER_CROP
+            placeholderShown = false
+        }
+        artView.setImageBitmap(bitmap)
+    }
+
+    private fun showPlaceholder() {
+        artView.setImageResource(R.drawable.ic_notification)
+        artView.setColorFilter(0xFF8A8A92.toInt())
+        artView.scaleType = ImageView.ScaleType.CENTER_INSIDE
+        placeholderShown = true
+    }
+
+    private fun decodeSampled(bytes: ByteArray): Bitmap? {
+        return try {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            var sample = 1
+            val maxSide = maxOf(bounds.outWidth, bounds.outHeight)
+            while (maxSide / sample > 384) sample *= 2
+            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+        } catch (_: Throwable) {
+            null
         }
     }
 
@@ -553,7 +685,9 @@ class MusicCapsuleController(
         private const val EXPANDED_RADIUS_DP = 34
         private const val EXPANDED_ART_DP = 58
         private const val AUTO_COLLAPSE_MS = 7_000L
-        private const val PAUSED_HIDE_MS = 10_000L
+        private const val PAUSED_HIDE_MS = 60_000L
+        private const val HIDE_GRACE_MS = 4_000L
+        private const val RETRY_BACKOFF_MS = 8_000L
 
         fun canDrawOverlays(context: Context): Boolean =
             Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
