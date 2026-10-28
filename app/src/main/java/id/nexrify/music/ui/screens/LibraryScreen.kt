@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.screens
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,15 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.outlined.LibraryMusic
-import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -108,13 +103,13 @@ fun LibraryScreen(
             ) {
                 Column {
                     Text(
-                        text = "Library",
+                        text = S.library,
                         style = Typography.headlineLarge,
                         color = colors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (selectedTab == 0) "${favorites.size} Liked Songs" else "${playlists.size} Playlists",
+                        text = if (selectedTab == 0) S.likedCount(favorites.size) else S.playlistCount(playlists.size),
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -131,14 +126,14 @@ fun LibraryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Sync,
-                            contentDescription = "Sync Liked Songs",
+                            imageVector = NexIcons.Sync,
+                            contentDescription = S.cd("Sync Liked Songs"),
                             tint = colors.textPrimary,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Sync YT",
+                            text = S.syncYt,
                             style = Typography.labelSmall,
                             color = colors.textPrimary,
                             fontSize = 11.sp
@@ -175,7 +170,7 @@ fun LibraryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Liked Songs",
+                        text = S.likedSongs,
                         style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium),
                         color = if (selectedTab == 0) colors.background else colors.textPrimary
                     )
@@ -191,7 +186,7 @@ fun LibraryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Playlists (${playlists.size})",
+                        text = S.playlistsTab(playlists.size),
                         style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium),
                         color = if (selectedTab == 1) colors.background else colors.textPrimary
                     )
@@ -209,20 +204,20 @@ fun LibraryScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.Outlined.LibraryMusic,
+                                imageVector = NexIcons.LibraryMusic,
                                 contentDescription = null,
                                 tint = colors.textSecondary,
                                 modifier = Modifier.size(56.dp)
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Your library is empty",
+                                text = S.libraryEmpty,
                                 style = Typography.titleMedium,
                                 color = colors.textPrimary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap the heart icon on any song to save it here",
+                                text = S.libraryEmptyHint,
                                 style = Typography.bodyMedium,
                                 color = colors.textMuted
                             )
@@ -269,8 +264,8 @@ fun LibraryScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "New Playlist",
+                                    imageVector = NexIcons.Add,
+                                    contentDescription = S.cd("New Playlist"),
                                     tint = colors.background,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -278,12 +273,12 @@ fun LibraryScreen(
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
                                 Text(
-                                    text = "Buat Playlist Baru",
+                                    text = S.newPlaylist,
                                     style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = colors.textPrimary
                                 )
                                 Text(
-                                    text = "Kumpulkan lagu sesuai suasana hatimu",
+                                    text = S.newPlaylistHint,
                                     style = Typography.bodySmall,
                                     color = colors.textMuted
                                 )
@@ -302,20 +297,20 @@ fun LibraryScreen(
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
-                                        imageVector = Icons.Outlined.QueueMusic,
+                                        imageVector = NexIcons.QueueMusic,
                                         contentDescription = null,
                                         tint = colors.textSecondary,
                                         modifier = Modifier.size(52.dp)
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
-                                        text = "Belum Ada Playlist",
+                                        text = S.noPlaylistTitle,
                                         style = Typography.titleMedium,
                                         color = colors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "Tekan tombol di atas untuk membuat playlist",
+                                        text = S.noPlaylistHint,
                                         style = Typography.bodyMedium,
                                         color = colors.textMuted
                                     )
@@ -353,8 +348,8 @@ fun LibraryScreen(
                                 }
                                 IconButton(onClick = { viewModel.deletePlaylist(playlist.id) }) {
                                     Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = "Delete",
+                                        imageVector = NexIcons.DeleteOutline,
+                                        contentDescription = S.cd("Delete"),
                                         tint = colors.textMuted,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -376,7 +371,7 @@ fun LibraryScreen(
             onDismissRequest = { showCreateDialog = false },
             title = {
                 Text(
-                    text = "Beri Nama Playlist",
+                    text = S.namePlaylist,
                     style = Typography.titleLarge,
                     color = colors.textPrimary
                 )
@@ -385,7 +380,7 @@ fun LibraryScreen(
                 OutlinedTextField(
                     value = newPlaylistName,
                     onValueChange = { newPlaylistName = it },
-                    placeholder = { Text("Contoh: Galau Malam, Workout...", color = colors.textMuted) },
+                    placeholder = { Text(S.playlistNameExample, color = colors.textMuted) },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = colors.card,
@@ -414,12 +409,12 @@ fun LibraryScreen(
                         contentColor = colors.background
                     )
                 ) {
-                    Text("Buat")
+                    Text(S.create)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateDialog = false }) {
-                    Text("Batal", color = colors.textMuted)
+                    Text(S.cancel, color = colors.textMuted)
                 }
             },
             containerColor = colors.background
@@ -487,7 +482,7 @@ fun PlaylistCollageIcon(playlist: Playlist, size: Int = 50) {
             )
         } else {
             Icon(
-                imageVector = Icons.Outlined.QueueMusic,
+                imageVector = NexIcons.QueueMusic,
                 contentDescription = null,
                 tint = colors.textPrimary,
                 modifier = Modifier.size((size * 0.5).dp)
@@ -517,8 +512,8 @@ fun PlaylistDetailView(
         ) {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
+                    imageVector = NexIcons.ArrowBack,
+                    contentDescription = S.cd("Back"),
                     tint = colors.textPrimary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -572,9 +567,9 @@ fun PlaylistDetailView(
                                 shape = RoundedCornerShape(24.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Icon(NexIcons.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Play All", fontWeight = FontWeight.Bold)
+                                Text(S.playAll, fontWeight = FontWeight.Bold)
                             }
 
                             Button(
@@ -586,9 +581,9 @@ fun PlaylistDetailView(
                                 shape = RoundedCornerShape(24.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(NexIcons.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Shuffle", fontWeight = FontWeight.SemiBold)
+                                Text(S.shuffle, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -605,7 +600,7 @@ fun PlaylistDetailView(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Playlist ini masih kosong. Tambahkan lagu dari pencarian atau beranda!",
+                            text = S.playlistEmpty,
                             style = Typography.bodyMedium,
                             color = colors.textMuted,
                             modifier = Modifier.padding(horizontal = 32.dp)
