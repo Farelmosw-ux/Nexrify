@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import android.content.Intent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -21,22 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.outlined.BluetoothAudio
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Headphones
-import androidx.compose.material.icons.outlined.QueueMusic
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -165,15 +153,15 @@ fun FullPlayerSheet(
                         .background(Color.Black.copy(alpha = 0.4f))
                 ) {
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Collapse Player",
+                        imageVector = NexIcons.KeyboardArrowDown,
+                        contentDescription = S.cd("Collapse Player"),
                         tint = Color.White,
                         modifier = Modifier.size(28.dp)
                     )
                 }
 
                 Text(
-                    text = "NOW PLAYING",
+                    text = S.nowPlaying,
                     style = Typography.labelSmall.copy(
                         fontSize = 11.sp,
                         letterSpacing = 1.4.sp,
@@ -191,8 +179,8 @@ fun FullPlayerSheet(
                             .background(Color.Black.copy(alpha = 0.4f))
                     ) {
                         Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Options",
+                            imageVector = NexIcons.MoreVert,
+                            contentDescription = S.cd("Options"),
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -204,9 +192,9 @@ fun FullPlayerSheet(
                         modifier = Modifier.background(colors.card)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Tambahkan ke Playlist", color = colors.textPrimary) },
+                            text = { Text(S.addToPlaylist, color = colors.textPrimary) },
                             leadingIcon = {
-                                Icon(Icons.Outlined.QueueMusic, contentDescription = null, tint = colors.textPrimary)
+                                Icon(NexIcons.QueueMusic, contentDescription = null, tint = colors.textPrimary)
                             },
                             onClick = {
                                 showOptionsMenu = false
@@ -214,9 +202,9 @@ fun FullPlayerSheet(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Pengaturan & Audio", color = colors.textPrimary) },
+                            text = { Text(S.settingsAudio, color = colors.textPrimary) },
                             leadingIcon = {
-                                Icon(Icons.Outlined.Tune, contentDescription = null, tint = colors.textPrimary)
+                                Icon(NexIcons.Tune, contentDescription = null, tint = colors.textPrimary)
                             },
                             onClick = {
                                 showOptionsMenu = false
@@ -224,18 +212,18 @@ fun FullPlayerSheet(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Bagikan Lagu", color = colors.textPrimary) },
+                            text = { Text(S.shareSong, color = colors.textPrimary) },
                             leadingIcon = {
-                                Icon(Icons.Outlined.Share, contentDescription = null, tint = colors.textPrimary)
+                                Icon(NexIcons.Share, contentDescription = null, tint = colors.textPrimary)
                             },
                             onClick = {
                                 showOptionsMenu = false
                                 try {
                                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                        putExtra(Intent.EXTRA_TEXT, "Dengarkan ${track.title} oleh ${track.artist}: ${track.url}")
+                                        putExtra(Intent.EXTRA_TEXT, id.nexrify.music.i18n.currentStrings().shareText(track.title, track.artist, track.url))
                                         type = "text/plain"
                                     }
-                                    context.startActivity(Intent.createChooser(sendIntent, "Bagikan via"))
+                                    context.startActivity(Intent.createChooser(sendIntent, id.nexrify.music.i18n.currentStrings().shareVia))
                                 } catch (_: Exception) {}
                             }
                         )
@@ -288,8 +276,8 @@ fun FullPlayerSheet(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        imageVector = if (track.isFavorite) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Favorite",
+                        imageVector = if (track.isFavorite) NexIcons.Favorite else NexIcons.FavoriteBorder,
+                        contentDescription = S.cd("Favorite"),
                         tint = if (track.isFavorite) Color(0xFFFF3B30) else colors.textMuted,
                         modifier = Modifier.size(28.dp)
                     )
@@ -317,8 +305,8 @@ fun FullPlayerSheet(
                     modifier = Modifier.size(44.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Shuffle,
-                        contentDescription = "Shuffle",
+                        imageVector = NexIcons.Shuffle,
+                        contentDescription = S.cd("Shuffle"),
                         tint = if (isShuffle) colors.textPrimary else colors.textSecondary.copy(alpha = 0.4f),
                         modifier = Modifier.size(22.dp)
                     )
@@ -330,7 +318,7 @@ fun FullPlayerSheet(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_nexrify_rewind),
-                        contentDescription = "Previous Track",
+                        contentDescription = S.cd("Previous Track"),
                         tint = colors.textPrimary,
                         modifier = Modifier.size(32.dp)
                     )
@@ -357,7 +345,7 @@ fun FullPlayerSheet(
                         ) {
                             Icon(
                                 painter = if (isPlaying) painterResource(R.drawable.ic_nexrify_pause) else painterResource(R.drawable.ic_nexrify_play),
-                                contentDescription = if (isPlaying) "Pause" else "Play",
+                                contentDescription = if (isPlaying) S.cd("Pause") else S.cd("Play"),
                                 tint = colors.background,
                                 modifier = Modifier.size(34.dp)
                             )
@@ -371,7 +359,7 @@ fun FullPlayerSheet(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_nexrify_fast_forward),
-                        contentDescription = "Next Track",
+                        contentDescription = S.cd("Next Track"),
                         tint = colors.textPrimary,
                         modifier = Modifier.size(32.dp)
                     )
@@ -381,11 +369,11 @@ fun FullPlayerSheet(
                     onClick = onRepeatClick,
                     modifier = Modifier.size(44.dp)
                 ) {
-                    val icon = if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat
+                    val icon = if (repeatMode == Player.REPEAT_MODE_ONE) NexIcons.RepeatOne else NexIcons.Repeat
                     val tint = if (repeatMode != Player.REPEAT_MODE_OFF) colors.textPrimary else colors.textSecondary.copy(alpha = 0.4f)
                     Icon(
                         imageVector = icon,
-                        contentDescription = "Repeat",
+                        contentDescription = S.cd("Repeat"),
                         tint = tint,
                         modifier = Modifier.size(22.dp)
                     )
@@ -419,19 +407,19 @@ fun FullPlayerSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val icon = when (audioDeviceState.iconType) {
-                        id.nexrify.music.data.audio.OutputType.WIRED -> Icons.Outlined.Headphones
-                        id.nexrify.music.data.audio.OutputType.BLUETOOTH -> Icons.Outlined.BluetoothAudio
-                        id.nexrify.music.data.audio.OutputType.SPEAKER -> Icons.Outlined.VolumeUp
+                        id.nexrify.music.data.audio.OutputType.WIRED -> NexIcons.Headphones
+                        id.nexrify.music.data.audio.OutputType.BLUETOOTH -> NexIcons.BluetoothAudio
+                        id.nexrify.music.data.audio.OutputType.SPEAKER -> NexIcons.VolumeUp
                     }
                     Icon(
                         imageVector = icon,
-                        contentDescription = "Audio Output",
+                        contentDescription = S.cd("Audio Output"),
                         tint = colors.textPrimary,
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = audioDeviceState.title,
+                        text = S.deviceLabel(audioDeviceState.title),
                         style = Typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
                         color = colors.textPrimary,
                         maxLines = 1
@@ -456,8 +444,8 @@ fun FullPlayerSheet(
                             .border(1.dp, colors.border, CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.ChatBubbleOutline,
-                            contentDescription = "Lyrics",
+                            imageVector = NexIcons.ChatBubbleOutline,
+                            contentDescription = S.cd("Lyrics"),
                             tint = if (isLyricsExpanded) colors.background else colors.textPrimary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -473,8 +461,8 @@ fun FullPlayerSheet(
                             .border(1.dp, colors.border, CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.QueueMusic,
-                            contentDescription = "Add to playlist",
+                            imageVector = NexIcons.QueueMusic,
+                            contentDescription = S.cd("Add to playlist"),
                             tint = colors.textPrimary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -490,8 +478,8 @@ fun FullPlayerSheet(
                             .border(1.dp, colors.border, CircleShape)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Tune,
-                            contentDescription = "Settings & Equalizer",
+                            imageVector = NexIcons.Tune,
+                            contentDescription = S.cd("Settings & Equalizer"),
                             tint = colors.textPrimary,
                             modifier = Modifier.size(18.dp)
                         )
