@@ -141,7 +141,12 @@ fun ProfileMenuSheet(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = account?.name ?: S.musicLover,
+                            text = account?.let { acc ->
+                                acc.name.takeIf { it.isNotBlank() && !it.equals("Nexrify User", true) && !it.equals("YouTube User", true) }
+                                    ?: acc.channelHandle.takeIf { it.isNotBlank() }
+                                    ?: acc.email.substringBefore('@').takeIf { it.isNotBlank() }
+                                    ?: S.googleUser
+                            } ?: S.musicLover,
                             style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = colors.textPrimary,
                             maxLines = 1,
