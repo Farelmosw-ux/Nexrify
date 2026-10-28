@@ -3,38 +3,41 @@ package id.nexrify.music.data.settings
 import java.time.LocalTime
 import java.time.ZonedDateTime
 
-/** Local-time context. Magrib uses a timezone-based estimate only (WIB/WITA/WIT), not a location-specific prayer timetable. */
+/**
+ * Konteks waktu untuk sapaan di Beranda.
+ * Maghrib TIDAK pernah ditebak dari jam tetap: hanya muncul kalau jadwalnya dihitung dari lokasi pengguna.
+ */
 data class HomeTimeContext(val period: String, val descriptionId: String, val descriptionEn: String)
 
 object TimeContext {
-    private data class MagribSchedule(val timezone: String, val time: LocalTime)
+    /** Lama sapaan Maghrib tampil sejak azan, dalam menit. */
+    const val MAGHRIB_WINDOW_MINUTES = 20L
+
+    private val MAGHRIB_MIN = LocalTime.of(15, 0)
+    private val MAGHRIB_MAX = LocalTime.of(21, 0)
 
     /**
-     * Uses the device's current UTC offset to select a WIB/WITA/WIT estimate.
-     * These are approximate display windows, not an authoritative prayer schedule;
-     * actual Magrib time varies by city and date.
+     * @param maghribTime awal waktu Maghrib hari ini di lokasi pengguna, atau null kalau lokasi/jadwal tidak tersedia.
+     *
+     * Waktu lain dibuat relatif terhadap Maghrib supaya selalu ada celah dan tidak bertabrakan:
+     * Sore berakhir tepat saat Maghrib mulai, lalu Petang baru dimulai setelah jendela Maghrib selesai.
      */
-    private fun timezoneMagrib(now: ZonedDateTime): MagribSchedule? {
-        val offsetHours = now.offset.totalSeconds / 3600
-        return when (offsetHours) {
-            7 -> MagribSchedule("WIB", LocalTime.of(18, 0))
-            8 -> MagribSchedule("WITA", LocalTime.of(18, 10))
-            9 -> MagribSchedule("WIT", LocalTime.of(18, 20))
-            else -> null
-        }
-    }
-
     fun resolve(now: ZonedDateTime, maghribTime: LocalTime? = null): HomeTimeContext {
         val time = now.toLocalTime()
-        val schedule = if (maghribTime == null) timezoneMagrib(now) else MagribSchedule("local", maghribTime)
-        if (schedule != null) {
-            val elapsed = java.time.Duration.between(schedule.time, time).toMinutes()
-            if (elapsed in 0..20) return HomeTimeContext(
-                "Magrib",
-                "Waktunya salat Magrib bagi yang beragama Islam. Yuk, istirahatkan sejenak aktivitasmu dan tunaikan ibadah. 🤍",
-                "It's time for Maghrib prayer for Muslims. Take a short break and make time for prayer. 🤍"
+        val maghrib = maghribTime?.takeIf { it >= MAGHRIB_MIN && it <= MAGHRIB_MAX }
+        val maghribEnd = maghrib?.plusMinutes(MAGHRIB_WINDOW_MINUTES)
+
+        if (maghrib != null && maghribEnd != null && time >= maghrib && time < maghribEnd) {
+            return HomeTimeContext(
+                "Maghrib",
+                "Waktunya salat Maghrib bagi yang beragama Islam. Yuk, istirahatkan sejenak aktivitasmu dan tunaikan ibadah. 🤍",
+                "It's time for Maghrib prayer for those who observe it. Take a short break from your activities and make time for prayer. 🤍"
             )
         }
+
+        val lateAfternoonEnd = maghrib ?: LocalTime.of(17, 15)
+        val eveningStart = maghribEnd ?: lateAfternoonEnd
+        val eveningEnd = maxOf(LocalTime.of(19, 0), eveningStart.plusMinutes(30))
 
         val period = when {
             now.hour == 0 && now.minute == 0 -> "Midnight"
@@ -44,9 +47,9 @@ object TimeContext {
             time >= LocalTime.of(5, 30) && time < LocalTime.of(10, 0) -> "Morning"
             time >= LocalTime.of(10, 0) && time < LocalTime.of(11, 0) -> "Late Morning"
             time >= LocalTime.of(11, 0) && time < LocalTime.of(15, 0) -> "Afternoon"
-            time >= LocalTime.of(15, 0) && time < LocalTime.of(17, 30) -> "Late Afternoon"
-            time >= LocalTime.of(17, 30) && time < LocalTime.of(19, 0) -> "Evening"
-            time >= LocalTime.of(19, 0) && time < LocalTime.of(23, 0) -> "Night"
+            time >= LocalTime.of(15, 0) && time < lateAfternoonEnd -> "Late Afternoon"
+            time >= eveningStart && time < eveningEnd -> "Evening"
+            time >= eveningEnd && time < LocalTime.of(23, 0) -> "Night"
             else -> "Late Night"
         }
         val id = when (period) {
