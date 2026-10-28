@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,13 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Logout
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -132,7 +129,7 @@ fun ProfileMenuSheet(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.AccountCircle,
+                                imageVector = NexIcons.AccountCircle,
                                 contentDescription = null,
                                 tint = colors.textPrimary,
                                 modifier = Modifier.size(32.dp)
@@ -144,7 +141,7 @@ fun ProfileMenuSheet(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = account?.name ?: "Nexrify Music Lover",
+                            text = account?.name ?: S.musicLover,
                             style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = colors.textPrimary,
                             maxLines = 1,
@@ -152,7 +149,7 @@ fun ProfileMenuSheet(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (account != null) (account.email.ifBlank { "Akun Google Terhubung" }) else "Ketuk untuk Login Google",
+                            text = if (account != null) (account.email.ifBlank { S.googleConnected }) else S.tapToLogin,
                             style = Typography.bodyMedium,
                             color = colors.textMuted,
                             maxLines = 1,
@@ -184,15 +181,15 @@ fun ProfileMenuSheet(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Logout,
-                                contentDescription = "Logout",
+                                imageVector = NexIcons.Logout,
+                                contentDescription = S.cd("Logout"),
                                 tint = colors.textPrimary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Ganti / Keluar Akun",
+                            text = S.switchAccount,
                             style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = colors.textPrimary
                         )
@@ -215,15 +212,15 @@ fun ProfileMenuSheet(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add",
+                                imageVector = NexIcons.Add,
+                                contentDescription = S.cd("Add"),
                                 tint = colors.background,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Hubungkan Akun Google",
+                            text = S.connectGoogle,
                             style = Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = colors.textPrimary
                         )
@@ -240,25 +237,25 @@ fun ProfileMenuSheet(
             ) {
                 // 1. Listening Stats (Taste Profile)
                 DrawerMenuItem(
-                    icon = Icons.Outlined.BarChart,
-                    title = "Statistik Mendengarkan",
-                    subtitle = "Analisis selera & artis favoritmu",
+                    icon = NexIcons.BarChart,
+                    title = S.statsTitle,
+                    subtitle = S.statsSub,
                     onClick = { showStatsDialog = true }
                 )
 
                 // 2. Recents
                 DrawerMenuItem(
-                    icon = Icons.Outlined.History,
-                    title = "Terakhir Diputar",
-                    subtitle = if (recentlyPlayed.isEmpty()) "Belum ada riwayat pemutaran" else "${recentlyPlayed.size} lagu dalam riwayat",
+                    icon = NexIcons.History,
+                    title = S.recentTitle,
+                    subtitle = if (recentlyPlayed.isEmpty()) S.recentSubEmpty else S.recentSubCount(recentlyPlayed.size),
                     onClick = { showRecentsDialog = true }
                 )
 
                 // 3. Settings & Privacy
                 DrawerMenuItem(
-                    icon = Icons.Outlined.Settings,
-                    title = "Pengaturan & Privasi",
-                    subtitle = "Kualitas audio, tema, cache & preferensi",
+                    icon = NexIcons.Settings,
+                    title = S.settingsPrivacy,
+                    subtitle = S.settingsPrivacySub,
                     onClick = {
                         onDismiss()
                         onOpenSettingsClick()
@@ -280,14 +277,14 @@ fun ProfileMenuSheet(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Outlined.BarChart,
+                        imageVector = NexIcons.BarChart,
                         contentDescription = null,
                         tint = colors.textPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Statistik Mendengarkan",
+                        text = S.statsTitle,
                         style = Typography.titleLarge,
                         color = colors.textPrimary
                     )
@@ -302,7 +299,7 @@ fun ProfileMenuSheet(
             },
             confirmButton = {
                 TextButton(onClick = { showStatsDialog = false }) {
-                    Text("Tutup", color = colors.textPrimary)
+                    Text(S.close, color = colors.textPrimary)
                 }
             },
             containerColor = colors.background
@@ -316,14 +313,14 @@ fun ProfileMenuSheet(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Outlined.History,
+                        imageVector = NexIcons.History,
                         contentDescription = null,
                         tint = colors.textPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Terakhir Diputar",
+                        text = S.recentTitle,
                         style = Typography.titleLarge,
                         color = colors.textPrimary
                     )
@@ -332,7 +329,7 @@ fun ProfileMenuSheet(
             text = {
                 if (recentlyPlayed.isEmpty()) {
                     Text(
-                        text = "Belum ada riwayat lagu yang diputar.",
+                        text = S.noRecent,
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -389,7 +386,7 @@ fun ProfileMenuSheet(
             },
             confirmButton = {
                 TextButton(onClick = { showRecentsDialog = false }) {
-                    Text("Tutup", color = colors.textPrimary)
+                    Text(S.close, color = colors.textPrimary)
                 }
             },
             containerColor = colors.background
@@ -473,7 +470,7 @@ fun ListeningStatsDiagram(
                     .padding(12.dp)
             ) {
                 Text(
-                    text = "Total Putar",
+                    text = S.totalPlays,
                     style = Typography.bodySmall,
                     color = colors.textMuted
                 )
@@ -495,7 +492,7 @@ fun ListeningStatsDiagram(
                     .padding(12.dp)
             ) {
                 Text(
-                    text = "Artis Didengar",
+                    text = S.artistsHeard,
                     style = Typography.bodySmall,
                     color = colors.textMuted
                 )
@@ -518,7 +515,7 @@ fun ListeningStatsDiagram(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Belum cukup data. Putar lebih banyak lagu untuk melihat diagram!",
+                    text = S.notEnoughData,
                     style = Typography.bodyMedium,
                     color = colors.textMuted,
                     textAlign = TextAlign.Center
@@ -542,12 +539,12 @@ fun ListeningStatsDiagram(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "DIAGRAM FREKUENSI ARTIS",
+                        text = S.artistChartTitle,
                         style = Typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                         color = colors.textMuted
                     )
                     Text(
-                        text = "Top ${topArtists.size}",
+                        text = S.topN(topArtists.size),
                         style = Typography.labelSmall.copy(fontSize = 10.sp),
                         color = colors.textSecondary
                     )
@@ -611,7 +608,7 @@ fun ListeningStatsDiagram(
 
             // Detailed Horizontal Progress Distribution
             Text(
-                text = "Peringkat Artis Teratas",
+                text = S.topArtistsRanking,
                 style = Typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = colors.textPrimary,
                 modifier = Modifier.padding(bottom = 8.dp)
