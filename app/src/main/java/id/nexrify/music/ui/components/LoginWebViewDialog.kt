@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.ViewGroup
@@ -19,9 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -93,28 +94,28 @@ fun LoginWebViewDialog(
             ) {
                 IconButton(onClick = onDismiss) {
                     Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
+                        imageVector = NexIcons.Close,
+                        contentDescription = S.close,
                         tint = PureWhite
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Login to YouTube",
+                        text = S.loginYoutube,
                         style = Typography.titleMedium,
                         color = PureWhite
                     )
                     Text(
-                        text = "Sign in via official Google login",
+                        text = S.loginYoutubeSub,
                         style = Typography.bodyMedium,
                         color = MutedText
                     )
                 }
                 IconButton(onClick = { webViewInstance?.reload() }) {
                     Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh",
+                        imageVector = NexIcons.Refresh,
+                        contentDescription = S.refresh,
                         tint = SubtleGray
                     )
                 }
