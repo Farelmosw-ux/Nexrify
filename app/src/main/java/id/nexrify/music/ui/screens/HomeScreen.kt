@@ -110,6 +110,20 @@ fun HomeScreen(
         }
     }
 
+    // Maghrib dihitung dari lokasi pengguna dan zona waktu perangkat, tidak pernah dari jam tetap.
+    val maghribManager = remember { id.nexrify.music.data.prayer.MaghribManager.getInstance() }
+    val maghribPlace by maghribManager.place.collectAsState()
+    val maghribStatus by maghribManager.status.collectAsState()
+    LaunchedEffect(Unit) {
+        while (true) {
+            maghribManager.refresh()
+            delay(15 * 60_000L)
+        }
+    }
+    val maghribTime = remember(maghribPlace, localNow.toLocalDate(), localNow.zone) {
+        maghribManager.maghribFor(localNow.toLocalDate(), localNow.zone)
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -121,13 +135,19 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val timeContext = id.nexrify.music.data.settings.TimeContext.resolve(localNow)
+            val timeContext = id.nexrify.music.data.settings.TimeContext.resolve(localNow, maghribTime)
             val greeting = S.period(timeContext.period)
             val description = if (S.english) timeContext.descriptionEn else timeContext.descriptionId
             Column(modifier = Modifier.weight(1f)) {
                 Text(greeting, style = Typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(description, style = Typography.bodyLarge, color = colors.textMuted)
+                if (maghribStatus == id.nexrify.music.data.prayer.MaghribManager.Status.NO_PERMISSION &&
+                    localNow.hour in 16..18
+                ) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(S.maghribHomeHint, style = Typography.bodySmall, color = colors.textSecondary)
+                }
             }
             AccountTopButton(account = currentAccount, onClick = { showProfileMenu = true })
         }
@@ -397,7 +417,7 @@ fun AccountTopButton(
             )
         } else if (account != null) {
             Text(
-                text = account.name.take(1).uppercase(),
+                text = account.name.take(1).uppercase().ifBlank { "G" },
                 style = Typography.titleMedium,
                 color = colors.textPrimary
             )
