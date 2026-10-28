@@ -65,7 +65,6 @@ fun LibraryScreen(
     val isLoadingTrack by viewModel.isLoadingTrack.collectAsState()
     val currentTrack by viewModel.currentTrack.collectAsState()
     val currentAccount by viewModel.authState.collectAsState()
-    val syncStatus by viewModel.syncLikedSongsStatus.collectAsState()
 
     var selectedTab by remember { mutableStateOf(0) } // 0: Liked Songs, 1: Playlists
     var selectedPlaylistId by remember { mutableStateOf<String?>(null) }
@@ -115,40 +114,6 @@ fun LibraryScreen(
                     )
                 }
 
-                if (selectedTab == 0 && currentAccount != null) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(colors.card)
-                            .border(1.dp, colors.border, RoundedCornerShape(16.dp))
-                            .clickable { viewModel.syncLikedSongs() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = NexIcons.Sync,
-                            contentDescription = S.cd("Sync Liked Songs"),
-                            tint = colors.textPrimary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = S.syncYt,
-                            style = Typography.labelSmall,
-                            color = colors.textPrimary,
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-            }
-
-            if (selectedTab == 0 && syncStatus != null) {
-                Text(
-                    text = syncStatus.orEmpty(),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    style = Typography.bodySmall,
-                    color = colors.textMuted
-                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
