@@ -1,5 +1,7 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -130,7 +132,7 @@ fun MiniPlayer(
                 IconButton(onClick = onPlayPauseClick) {
                     Icon(
                         painter = if (isPlaying) painterResource(R.drawable.ic_nexrify_pause) else painterResource(R.drawable.ic_nexrify_play),
-                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        contentDescription = if (isPlaying) S.cd("Pause") else S.cd("Play"),
                         tint = colors.textPrimary,
                         modifier = Modifier.size(26.dp)
                     )
@@ -140,7 +142,7 @@ fun MiniPlayer(
             IconButton(onClick = onSkipNextClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_nexrify_fast_forward),
-                    contentDescription = "Next",
+                    contentDescription = S.cd("Next"),
                     tint = colors.textPrimary,
                     modifier = Modifier.size(24.dp)
                 )
