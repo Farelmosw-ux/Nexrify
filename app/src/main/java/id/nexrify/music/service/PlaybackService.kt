@@ -161,7 +161,7 @@ class PlaybackService : MediaSessionService() {
             .build()
         notificationProvider.setSmallIcon(R.drawable.ic_notification)
 
-        setMediaNotificationProvider(notificationProvider)
+        setMediaNotificationProvider(PersistentNotificationProvider(notificationProvider))
 
         mediaSession = MediaSession.Builder(this, forwardingPlayer)
             .setSessionActivity(pendingIntent)
@@ -203,6 +203,12 @@ class PlaybackService : MediaSessionService() {
                 }
             }
         }
+    }
+
+    /** Saat musik diputar, notifikasi selalu dipasang sebagai foreground (ongoing) supaya tidak bisa dihapus. */
+    @OptIn(UnstableApi::class)
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        super.onUpdateNotification(session, startInForegroundRequired || session.player.playWhenReady)
     }
 
     /** Keep the media session alive when the user swipes the app task away during playback. */
