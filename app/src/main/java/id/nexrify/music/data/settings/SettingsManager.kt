@@ -52,6 +52,24 @@ class SettingsManager private constructor(private val context: Context) {
         AppLanguage.SYSTEM -> !java.util.Locale.getDefault().language.equals("id", ignoreCase = true)
     }
 
+    private val _capsuleEnabled = MutableStateFlow(prefs.getBoolean(KEY_CAPSULE, true))
+    val capsuleEnabled: StateFlow<Boolean> = _capsuleEnabled.asStateFlow()
+
+    @Volatile
+    private var capsuleListener: (() -> Unit)? = null
+
+    fun isCapsuleEnabled(): Boolean = _capsuleEnabled.value
+
+    fun setCapsuleEnabled(enabled: Boolean) {
+        _capsuleEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_CAPSULE, enabled).apply()
+        capsuleListener?.invoke()
+    }
+
+    fun setCapsuleChangeListener(listener: (() -> Unit)?) {
+        capsuleListener = listener
+    }
+
     private fun loadThemeMode(): ThemeMode {
         val name = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
         return try {
@@ -180,6 +198,7 @@ class SettingsManager private constructor(private val context: Context) {
         private const val KEY_AUDIO_QUALITY = "audio_quality"
         private const val KEY_AUTO_TRANSLATE = "lyrics_auto_translate"
         private const val KEY_LANGUAGE = "app_language"
+        private const val KEY_CAPSULE = "music_capsule_enabled"
 
         @Volatile
         private var instance: SettingsManager? = null
