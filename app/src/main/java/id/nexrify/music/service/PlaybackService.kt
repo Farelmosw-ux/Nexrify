@@ -23,6 +23,7 @@ import androidx.media3.session.MediaSessionService
 import id.nexrify.music.MainActivity
 import id.nexrify.music.NexrifyWidgetProvider
 import id.nexrify.music.R
+import id.nexrify.music.i18n.currentStrings
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
@@ -31,6 +32,7 @@ class PlaybackService : MediaSessionService() {
 
     private var player: Player? = null
     private var mediaSession: MediaSession? = null
+    private var capsule: id.nexrify.music.capsule.MusicCapsuleController? = null
     private val artworkExecutor = Executors.newSingleThreadExecutor()
     @Volatile private var latestArtworkUrl: String? = null
     @Volatile private var latestArtworkTitle: String? = null
@@ -164,6 +166,9 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, forwardingPlayer)
             .setSessionActivity(pendingIntent)
             .build()
+
+        // Panel musik kapsul di atas layar (butuh izin tampil di atas aplikasi lain, diatur dari Pengaturan).
+        capsule = id.nexrify.music.capsule.MusicCapsuleController(this, forwardingPlayer).also { it.start() }
     }
 
     private fun updateHomeWidget(player: ExoPlayer) {
@@ -212,7 +217,7 @@ class PlaybackService : MediaSessionService() {
                 getString(R.string.app_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Nexrify Media Playback Controls"
+                description = currentStrings().playbackChannelDesc
                 setShowBadge(false)
             }
             val notificationManager = getSystemService(NotificationManager::class.java)
@@ -225,6 +230,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        capsule?.destroy()
+        capsule = null
         mediaSession?.run {
             player.release()
             release()
