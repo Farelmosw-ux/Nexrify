@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import id.nexrify.music.data.prayer.MaghribManager
+
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -108,6 +112,13 @@ fun SettingsDialog(
     var latestReleaseUrl by remember { mutableStateOf("https://github.com/Farelmosw-ux/Nexrify/releases") }
     var updateBusy by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val maghribManager = remember { MaghribManager.getInstance() }
+    val maghribStatus by maghribManager.status.collectAsState()
+    val maghribPlace by maghribManager.place.collectAsState()
+    val locationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        maghribManager.refresh()
+    }
+    LaunchedEffect(Unit) { maghribManager.refresh() }
     val capsuleEnabled by settingsManager.capsuleEnabled.collectAsState()
     var overlayGranted by remember { mutableStateOf(MusicCapsuleController.canDrawOverlays(context)) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -326,6 +337,63 @@ fun SettingsDialog(
                             colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.background)
                         ) {
                             Text(S.capsuleGrant)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider(color = colors.border, thickness = 1.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Sapaan Maghrib berdasarkan lokasi
+                Text(
+                    text = S.maghribTitle,
+                    style = Typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(S.maghribDesc, style = Typography.bodySmall, color = colors.textMuted)
+                Spacer(modifier = Modifier.height(10.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.card)
+                        .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                        .padding(14.dp)
+                ) {
+                    val todayMaghrib = remember(maghribStatus, maghribPlace) {
+                        maghribManager.maghribFor(java.time.LocalDate.now(), java.time.ZoneId.systemDefault())
+                    }
+                    Text(
+                        text = when (maghribStatus) {
+                            MaghribManager.Status.NO_PERMISSION -> S.maghribNoPermission
+                            MaghribManager.Status.LOCATING -> S.maghribLocating
+                            MaghribManager.Status.UNAVAILABLE -> S.maghribUnavailable
+                            MaghribManager.Status.READY -> todayMaghrib?.let {
+                                S.maghribReady(it.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")))
+                            } ?: S.maghribUnavailable
+                        },
+                        style = Typography.bodyMedium,
+                        color = colors.textPrimary
+                    )
+                    if (maghribStatus == MaghribManager.Status.READY) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(S.maghribNote, style = Typography.bodySmall, color = colors.textMuted)
+                    }
+                    if (maghribStatus == MaghribManager.Status.NO_PERMISSION || maghribStatus == MaghribManager.Status.UNAVAILABLE) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                if (maghribStatus == MaghribManager.Status.NO_PERMISSION) {
+                                    locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                                } else {
+                                    maghribManager.refresh()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.background)
+                        ) {
+                            Text(if (maghribStatus == MaghribManager.Status.NO_PERMISSION) S.maghribGrant else S.maghribRetry)
                         }
                     }
                 }
