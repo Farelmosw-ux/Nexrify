@@ -1,5 +1,6 @@
 package id.nexrify.music
 
+
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -80,7 +81,7 @@ class NexrifyWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_title, if (title.isBlank()) "Nexrify" else title)
             views.setTextViewText(
                 R.id.widget_artist,
-                if (title.isBlank()) "Belum ada lagu diputar" else artist
+                if (title.isBlank()) id.nexrify.music.i18n.currentStrings().noSongPlaying else artist
             )
             views.setImageViewResource(
                 R.id.widget_play,
