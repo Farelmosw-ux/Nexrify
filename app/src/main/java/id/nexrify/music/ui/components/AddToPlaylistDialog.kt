@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,10 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -136,15 +136,15 @@ fun AddToPlaylistDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "New",
+                        imageVector = NexIcons.Add,
+                        contentDescription = S.cd("New"),
                         tint = colors.background,
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
-                    text = "Buat Playlist Baru",
+                    text = S.newPlaylist,
                     style = Typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = colors.textPrimary
                 )
@@ -153,7 +153,7 @@ fun AddToPlaylistDialog(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Pilih Playlist",
+                text = S.choosePlaylist,
                 style = Typography.labelLarge.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                 color = colors.textMuted,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -167,7 +167,7 @@ fun AddToPlaylistDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Belum ada playlist. Buat playlist pertamamu!",
+                        text = S.noPlaylistCreateFirst,
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -201,7 +201,7 @@ fun AddToPlaylistDialog(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.QueueMusic,
+                                    imageVector = NexIcons.QueueMusic,
                                     contentDescription = null,
                                     tint = colors.textPrimary,
                                     modifier = Modifier.size(22.dp)
@@ -224,8 +224,8 @@ fun AddToPlaylistDialog(
                             }
                             if (alreadyInPlaylist) {
                                 Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Added",
+                                    imageVector = NexIcons.Check,
+                                    contentDescription = S.cd("Added"),
                                     tint = colors.textPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -242,7 +242,7 @@ fun AddToPlaylistDialog(
             onDismissRequest = { showCreateDialog = false },
             title = {
                 Text(
-                    text = "Beri Nama Playlist",
+                    text = S.namePlaylist,
                     style = Typography.titleLarge,
                     color = colors.textPrimary
                 )
@@ -251,7 +251,7 @@ fun AddToPlaylistDialog(
                 OutlinedTextField(
                     value = newPlaylistName,
                     onValueChange = { newPlaylistName = it },
-                    placeholder = { Text("Nama playlist...", color = colors.textMuted) },
+                    placeholder = { Text(S.playlistNameHint, color = colors.textMuted) },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = colors.card,
@@ -280,12 +280,12 @@ fun AddToPlaylistDialog(
                         contentColor = colors.background
                     )
                 ) {
-                    Text("Buat & Tambahkan")
+                    Text(S.createAndAdd)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateDialog = false }) {
-                    Text("Batal", color = colors.textMuted)
+                    Text(S.cancel, color = colors.textMuted)
                 }
             },
             containerColor = colors.background
