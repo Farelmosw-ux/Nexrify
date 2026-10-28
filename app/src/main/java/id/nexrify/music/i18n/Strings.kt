@@ -166,7 +166,6 @@ class Strings(val english: Boolean) {
     val library get() = t("Koleksi", "Library")
     fun likedCount(n: Int) = t("$n lagu disukai", "$n liked songs")
     fun playlistCount(n: Int) = t("$n playlist", "$n playlists")
-    val syncYt get() = t("Sinkron YT", "Sync YT")
     val likedSongs get() = t("Lagu disukai", "Liked songs")
     fun playlistsTab(n: Int) = t("Playlist ($n)", "Playlists ($n)")
     val libraryEmpty get() = t("Koleksimu masih kosong", "Your library is empty")
@@ -191,7 +190,7 @@ class Strings(val english: Boolean) {
         else -> raw
     }
     fun period(raw: String) = when (raw) {
-        "Magrib" -> t("Magrib", "Maghrib")
+        "Maghrib" -> t("Maghrib", "Maghrib")
         "Midnight" -> t("Tengah malam", "Midnight")
         "Midday" -> t("Tengah hari", "Midday")
         "Early Morning" -> t("Dini hari", "Early morning")
@@ -243,6 +242,28 @@ class Strings(val english: Boolean) {
         else -> t("Elektronik dan suasana festival", "Electronic and festival vibes")
     }
 
+    // Maghrib dan lokasi
+    val maghribTitle get() = t("Sapaan Maghrib", "Maghrib greeting")
+    val maghribDesc get() = t(
+        "Dihitung dari lokasi dan zona waktumu, jadi pas dengan kotamu dan ikut berubah kalau kamu pindah tempat.",
+        "Calculated from your location and time zone, so it fits your city and follows you when you move."
+    )
+    val maghribNoPermission get() = t(
+        "Izin lokasi belum diberikan, jadi sapaan Maghrib belum tampil. Musik tetap bisa dipakai seperti biasa.",
+        "Location permission isn't granted, so the Maghrib greeting isn't shown. Music works as usual."
+    )
+    val maghribLocating get() = t("Lagi nyari lokasimu…", "Finding your location…")
+    val maghribUnavailable get() = t(
+        "Lokasi belum bisa didapat, jadi sapaan Maghrib dimatikan dulu. Nyalakan lokasi HP lalu coba lagi.",
+        "Couldn't get your location, so the Maghrib greeting is off for now. Turn on location and try again."
+    )
+    fun maghribReady(time: String) = t("Maghrib hari ini sekitar $time di lokasimu.", "Maghrib today is around $time at your location.")
+    val maghribNote get() = t("Hitungan astronomi, bisa selisih 1 sampai 3 menit dari jadwal resmi.", "Astronomical calculation, may differ by 1 to 3 minutes from the official schedule.")
+    val maghribGrant get() = t("Izinkan lokasi", "Allow location")
+    val maghribRetry get() = t("Coba lagi", "Try again")
+    val maghribHomeHint get() = t("Aktifkan lokasi di Pengaturan biar sapaan Maghrib sesuai jadwal di kotamu.", "Turn on location in Settings so the Maghrib greeting follows your city's schedule.")
+    val googleUser get() = t("Pengguna Google", "Google user")
+
     // Perangkat audio
     fun deviceLabel(raw: String) = when {
         raw == "Phone Speaker" -> t("Speaker HP", "Phone speaker")
@@ -254,7 +275,6 @@ class Strings(val english: Boolean) {
     fun cd(key: String): String {
         if (english) return key
         return when (key) {
-            "Sync Liked Songs" -> "Sinkronkan lagu disukai"
             "New Playlist" -> "Playlist baru"
             "Delete" -> "Hapus"
             "Back" -> "Kembali"
@@ -287,12 +307,6 @@ class Strings(val english: Boolean) {
         }
     }
 
-    // Status sinkron YouTube Music
-    val syncNeedLogin get() = t("Masuk ke akun YouTube dulu buat sinkron lagu.", "Sign in to YouTube first to sync your songs.")
-    val syncRunning get() = t("Lagi sinkron lagu favorit dari YouTube Music…", "Syncing liked songs from YouTube Music…")
-    fun syncDone(n: Int) = t("Sinkron selesai. $n lagu ketemu.", "Sync finished. $n songs found.")
-    val syncEmpty get() = t("Nggak ada lagu yang ketemu. Cek koneksi dan akses akun YouTube Music, lalu coba lagi.", "No songs found. Check your connection and YouTube Music access, then try again.")
-    val syncFailed get() = t("Sinkron gagal. Cek koneksi lalu coba lagi.", "Sync failed. Check your connection and try again.")
 }
 
 val LocalStrings = staticCompositionLocalOf { Strings(false) }
