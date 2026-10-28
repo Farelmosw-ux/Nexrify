@@ -1,5 +1,16 @@
 package id.nexrify.music.ui.components
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import id.nexrify.music.capsule.MusicCapsuleController
+import id.nexrify.music.i18n.S
+import id.nexrify.music.i18n.currentStrings
+import id.nexrify.music.ui.components.NexFooter
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import android.widget.Toast
 import android.content.Intent
 import android.net.Uri
@@ -20,14 +31,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -78,6 +81,15 @@ private fun compareVersions(current: String, latest: String): Int {
     return 0
 }
 
+private sealed class UpdateState {
+    object Idle : UpdateState()
+    object Checking : UpdateState()
+    object NoRelease : UpdateState()
+    object Failed : UpdateState()
+    data class Latest(val current: String) : UpdateState()
+    data class Available(val current: String, val latest: String) : UpdateState()
+}
+
 @Composable
 fun SettingsDialog(
     onDismiss: () -> Unit
@@ -91,11 +103,23 @@ fun SettingsDialog(
     val autoTranslate by settingsManager.autoTranslate.collectAsState()
     val currentLanguage by settingsManager.language.collectAsState()
 
-    var cacheSize by remember { mutableStateOf("Menghitung...") }
-    var updateStatus by remember { mutableStateOf("Belum diperiksa") }
+    var cacheSize by remember { mutableStateOf<String?>(null) }
+    var updateState by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
     var latestReleaseUrl by remember { mutableStateOf("https://github.com/Farelmosw-ux/Nexrify/releases") }
     var updateBusy by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val capsuleEnabled by settingsManager.capsuleEnabled.collectAsState()
+    var overlayGranted by remember { mutableStateOf(MusicCapsuleController.canDrawOverlays(context)) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                overlayGranted = MusicCapsuleController.canDrawOverlays(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(Unit) {
         cacheSize = settingsManager.getFormattedCacheSizeAsync()
@@ -125,7 +149,7 @@ fun SettingsDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Pengaturan",
+                        text = S.settings,
                         style = Typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary
@@ -139,8 +163,8 @@ fun SettingsDialog(
                             .background(colors.card)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Tutup",
+                            imageVector = NexIcons.Close,
+                            contentDescription = S.close,
                             tint = colors.textPrimary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -151,7 +175,7 @@ fun SettingsDialog(
 
                 // Language preference (persisted; SYSTEM follows device locale).
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Outlined.Translate, contentDescription = null,
+                    Icon(imageVector = NexIcons.Translate, contentDescription = null,
                         tint = colors.textPrimary, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Bahasa / Language", style = Typography.titleMedium,
@@ -160,9 +184,9 @@ fun SettingsDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     listOf(
-                        AppLanguage.SYSTEM to "Ikuti perangkat",
-                        AppLanguage.INDONESIAN to "Indonesia",
-                        AppLanguage.ENGLISH to "English"
+                        AppLanguage.SYSTEM to S.langSystem,
+                        AppLanguage.INDONESIAN to S.langId,
+                        AppLanguage.ENGLISH to S.langEn
                     ).forEach { (language, label) ->
                         val selected = currentLanguage == language
                         Text(label, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
@@ -174,17 +198,28 @@ fun SettingsDialog(
                     }
                 }
                 Spacer(modifier = Modifier.height(18.dp))
-                Text("Pembaruan Nexrify", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text(S.updateTitle, style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Periksa versi terbaru dari GitHub Releases.", style = Typography.bodySmall, color = colors.textMuted)
+                Text(S.updateDesc, style = Typography.bodySmall, color = colors.textMuted)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(updateStatus, style = Typography.bodySmall, color = colors.textMuted)
+                Text(
+                    text = when (val st = updateState) {
+                        UpdateState.Idle -> S.updateNotChecked
+                        UpdateState.Checking -> S.updateChecking
+                        UpdateState.NoRelease -> S.updateNoRelease
+                        UpdateState.Failed -> S.updateFailed
+                        is UpdateState.Latest -> S.updateLatest(st.current)
+                        is UpdateState.Available -> S.updateAvailable(st.current, st.latest)
+                    },
+                    style = Typography.bodySmall,
+                    color = colors.textMuted
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(onClick = {
                         if (!updateBusy) scope.launch {
                             updateBusy = true
-                            updateStatus = "Memeriksa pembaruan…"
+                            updateState = UpdateState.Checking
                             val result = withContext(Dispatchers.IO) {
                                 runCatching {
                                     val client = OkHttpClient.Builder().callTimeout(8, TimeUnit.SECONDS).build()
@@ -205,32 +240,110 @@ fun SettingsDialog(
                             result.onSuccess { (latest, url) ->
                                 latestReleaseUrl = url
                                 val current = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0" }.getOrDefault("0.0.0")
-                                updateStatus = if (latest.isBlank()) "Versi terbaru belum dipublikasikan." else if (compareVersions(current, latest) >= 0) "Nexrify sudah versi terbaru ($current)." else "Pembaruan tersedia: $current → $latest"
-                            }.onFailure { updateStatus = "Pemeriksaan gagal. Periksa koneksi atau halaman Releases." }
+                                updateState = if (latest.isBlank()) UpdateState.NoRelease else if (compareVersions(current, latest) >= 0) UpdateState.Latest(current) else UpdateState.Available(current, latest)
+                            }.onFailure { updateState = UpdateState.Failed }
                         }
                     }, enabled = !updateBusy, colors = ButtonDefaults.buttonColors(containerColor = colors.card, contentColor = colors.textPrimary), modifier = Modifier.weight(1f)) {
-                        Text(if (updateBusy) "Memeriksa…" else "Check Update")
+                        Text(if (updateBusy) S.checking else S.checkUpdate)
                     }
                     Button(onClick = {
                         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(latestReleaseUrl))) }
-                            .onFailure { Toast.makeText(context, "Tidak dapat membuka halaman pembaruan", Toast.LENGTH_SHORT).show() }
+                            .onFailure { Toast.makeText(context, currentStrings().cannotOpenUpdate, Toast.LENGTH_SHORT).show() }
                     }, colors = ButtonDefaults.buttonColors(containerColor = colors.card, contentColor = colors.textPrimary), modifier = Modifier.weight(1f)) {
-                        Text("Buka Releases")
+                        Text(S.openReleases)
                     }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // Panel musik kapsul
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.Top, modifier = Modifier.weight(1f)) {
+                        Icon(
+                            imageVector = NexIcons.GraphicEq,
+                            contentDescription = null,
+                            tint = colors.textPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = S.capsuleTitle,
+                                style = Typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = S.capsuleDesc,
+                                style = Typography.bodySmall,
+                                color = colors.textMuted
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Switch(
+                        checked = capsuleEnabled,
+                        onCheckedChange = { settingsManager.setCapsuleEnabled(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = colors.background,
+                            checkedTrackColor = colors.accent,
+                            uncheckedThumbColor = colors.textSecondary,
+                            uncheckedTrackColor = colors.card
+                        )
+                    )
+                }
+                if (capsuleEnabled && !overlayGranted) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(colors.card)
+                            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                            .padding(14.dp)
+                    ) {
+                        Text(S.capsulePermission, style = Typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(S.capsulePermissionHint, style = Typography.bodySmall, color = colors.textMuted)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(
+                                            android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                            Uri.parse("package:${context.packageName}")
+                                        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }.onFailure {
+                                    Toast.makeText(context, currentStrings().capsuleNeedPermissionToast, Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.background)
+                        ) {
+                            Text(S.capsuleGrant)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider(color = colors.border, thickness = 1.dp)
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // 1. Audio Quality Section
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Outlined.GraphicEq,
+                        imageVector = NexIcons.GraphicEq,
                         contentDescription = null,
                         tint = colors.textPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Kualitas Audio Streaming",
+                        text = S.audioQualityTitle,
                         style = Typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary
@@ -255,14 +368,14 @@ fun SettingsDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = quality.title,
+                                text = S.qualityTitle(quality),
                                 style = Typography.bodyMedium,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = colors.textPrimary
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = quality.description,
+                                text = S.qualityDesc(quality),
                                 style = Typography.bodySmall,
                                 color = colors.textMuted
                             )
@@ -277,8 +390,8 @@ fun SettingsDialog(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Dipilih",
+                                    imageVector = NexIcons.Check,
+                                    contentDescription = S.selected,
                                     tint = colors.background,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -294,14 +407,14 @@ fun SettingsDialog(
                 // 2. Theme Selection
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Outlined.Palette,
+                        imageVector = NexIcons.Palette,
                         contentDescription = null,
                         tint = colors.textPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Tema Tampilan",
+                        text = S.themeTitle,
                         style = Typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary
@@ -311,9 +424,9 @@ fun SettingsDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 val themeOptions = listOf(
-                    Triple(ThemeMode.SYSTEM, "Mengikuti Sistem", "Sesuai tema mode HP kamu"),
-                    Triple(ThemeMode.DARK, "Dark Mode", "Hitam OLED hemat baterai"),
-                    Triple(ThemeMode.LIGHT, "Light Mode", "Putih monokrom bersih")
+                    Triple(ThemeMode.SYSTEM, S.themeSystem, S.themeSystemDesc),
+                    Triple(ThemeMode.DARK, S.themeDark, S.themeDarkDesc),
+                    Triple(ThemeMode.LIGHT, S.themeLight, S.themeLightDesc)
                 )
 
                 themeOptions.forEach { (mode, title, desc) ->
@@ -354,8 +467,8 @@ fun SettingsDialog(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Dipilih",
+                                    imageVector = NexIcons.Check,
+                                    contentDescription = S.selected,
                                     tint = colors.background,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -376,7 +489,7 @@ fun SettingsDialog(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Icon(
-                            imageVector = Icons.Outlined.Translate,
+                            imageVector = NexIcons.Translate,
                             contentDescription = null,
                             tint = colors.textPrimary,
                             modifier = Modifier.size(20.dp)
@@ -384,13 +497,13 @@ fun SettingsDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "Terjemahan Indonesia Lirik",
+                                text = S.lyricsTranslateTitle,
                                 style = Typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = colors.textPrimary
                             )
                             Text(
-                                text = "Tampilkan arti lirik bahasa Indonesia",
+                                text = S.lyricsTranslateDesc,
                                 style = Typography.bodySmall,
                                 color = colors.textMuted
                             )
@@ -421,7 +534,7 @@ fun SettingsDialog(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Icon(
-                            imageVector = Icons.Outlined.DeleteOutline,
+                            imageVector = NexIcons.DeleteOutline,
                             contentDescription = null,
                             tint = colors.textPrimary,
                             modifier = Modifier.size(20.dp)
@@ -429,13 +542,13 @@ fun SettingsDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "Penyimpanan & Cache",
+                                text = S.storageTitle,
                                 style = Typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = colors.textPrimary
                             )
                             Text(
-                                text = "Ukuran Cache: $cacheSize",
+                                text = S.cacheSize(cacheSize ?: S.calculating),
                                 style = Typography.bodySmall,
                                 color = colors.textMuted
                             )
@@ -452,14 +565,14 @@ fun SettingsDialog(
                                     val success = settingsManager.clearCacheAsync()
                                     if (success) {
                                         cacheSize = settingsManager.getFormattedCacheSizeAsync()
-                                        Toast.makeText(context, "Cache berhasil dibersihkan!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, currentStrings().cacheCleared, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
                             .padding(horizontal = 12.dp, vertical = 7.dp)
                     ) {
                         Text(
-                            text = "Bersihkan",
+                            text = S.clear,
                             style = Typography.labelSmall,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -470,34 +583,9 @@ fun SettingsDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 5. About / Version Footer
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Outlined.Info,
-                            contentDescription = null,
-                            tint = colors.textSecondary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Nexrify v3.3.0 • Media3 & Jetpack Compose",
-                            style = Typography.labelSmall,
-                            fontSize = 11.sp,
-                            color = colors.textSecondary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Open source, zero ads & ultra lightweight",
-                        style = Typography.labelSmall,
-                        fontSize = 10.sp,
-                        color = colors.textMuted
-                    )
-                }
+                // 5. Footer
+                HorizontalDivider(color = colors.border, thickness = 1.dp)
+                NexFooter(showPrivateNote = false)
 
                 Spacer(modifier = Modifier.height(8.dp))
             }
