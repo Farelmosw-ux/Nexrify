@@ -51,8 +51,8 @@ class AuthManager private constructor(private val context: Context) {
             handle = parseRawJsonRuns(handle)
         }
 
-        if (name.isBlank() || name.equals("YouTube User", ignoreCase = true)) {
-            name = email.substringBefore('@').takeIf { it.isNotBlank() } ?: "Nexrify User"
+        if (name.isBlank() || name.equals("YouTube User", ignoreCase = true) || name.equals("Nexrify User", ignoreCase = true)) {
+            name = email.substringBefore('@').takeIf { it.isNotBlank() } ?: ""
         }
         return UserAccount(name, email, handle, avatar, cookie)
     }
@@ -131,8 +131,9 @@ class AuthManager private constructor(private val context: Context) {
         val candidateName = name.trim()
         val newEmail = if (email.isNotBlank()) email.trim() else current.email
         val newName = if (candidateName.isNotBlank() && !candidateName.equals("YouTube User", true)) candidateName
-            else newEmail.substringBefore('@').takeIf { it.isNotBlank() } ?: current.name.takeIf { it.isNotBlank() } ?: "Nexrify User"
-        val newAvatar = if (avatarUrl.isNotBlank()) avatarUrl else current.avatarUrl
+            else newEmail.substringBefore('@').takeIf { it.isNotBlank() } ?: current.name.takeIf { it.isNotBlank() && !it.equals("Nexrify User", true) } ?: ""
+        val cleanAvatar = avatarUrl.trim().let { if (it.startsWith("//")) "https:$it" else it }
+        val newAvatar = if (cleanAvatar.isNotBlank()) cleanAvatar else current.avatarUrl
 
         prefs.edit()
             .putString(KEY_NAME, newName)
@@ -242,6 +243,12 @@ class AuthManager private constructor(private val context: Context) {
             Log.d("NexrifyAuth", "Account menu fetch error: ${e.message}")
         }
         return false
+    }
+
+    /** Ambil ulang nama dan foto akun Google/YouTube di latar belakang, dipanggil tiap aplikasi dibuka. */
+    fun refreshProfile() {
+        val cookie = getCookie() ?: return
+        CoroutineScope(Dispatchers.IO).launch { fetchAccountInfo(cookie) }
     }
 
     fun logout() {
