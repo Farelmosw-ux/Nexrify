@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Dipakai khusus untuk menampilkan panel musik kapsul di atas layar -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Lokasi kasar, hanya untuk menghitung waktu Maghrib sesuai kota pengguna -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:name=".NexrifyApplication"
