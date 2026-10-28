@@ -1,5 +1,9 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -22,10 +26,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,7 +100,7 @@ fun SyncedLyricsView(
                     modifier = Modifier.clickable(enabled = onExpandToggle != null) { onExpandToggle?.invoke() }
                 ) {
                     Text(
-                        text = "Lyrics",
+                        text = S.lyrics,
                         style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = colors.textPrimary
                     )
@@ -112,7 +112,7 @@ fun SyncedLyricsView(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = if (lyricsData?.isSynced == true) "KARAOKE SYNC" else "LYRICS",
+                            text = if (lyricsData?.isSynced == true) S.karaokeSync else S.lyricsPlain,
                             style = Typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
                             color = colors.textSecondary
                         )
@@ -134,14 +134,14 @@ fun SyncedLyricsView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Translate,
-                            contentDescription = "Translate",
+                            imageVector = NexIcons.Translate,
+                            contentDescription = S.cd("Translate"),
                             tint = if (showTranslation) colors.background else colors.textPrimary,
                             modifier = Modifier.size(13.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (showTranslation) "文A ID: ON" else "文A ID: OFF",
+                            text = if (showTranslation) S.translateOn else S.translateOff,
                             style = Typography.labelSmall.copy(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
@@ -157,8 +157,8 @@ fun SyncedLyricsView(
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                imageVector = if (isExpanded) NexIcons.KeyboardArrowDown else NexIcons.KeyboardArrowUp,
+                                contentDescription = if (isExpanded) S.cd("Collapse") else S.cd("Expand"),
                                 tint = colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -182,7 +182,7 @@ fun SyncedLyricsView(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "Loading lyrics...",
+                            text = S.loadingLyrics,
                             style = Typography.bodyMedium,
                             color = colors.textMuted
                         )
@@ -194,7 +194,7 @@ fun SyncedLyricsView(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No synchronized lyrics available",
+                        text = S.noLyrics,
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
