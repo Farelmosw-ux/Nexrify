@@ -17,3 +17,13 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - The playback service is declared exported so Android System UI and permitted external media controllers can discover/connect to the Media3 MediaSessionService. The service preserves the media session when the app task is swiped away during active playback, restores widget track state from the live media session, and loads track artwork asynchronously for the home-screen widget. Media3 supplies the playback notification and lock-screen controls from the same session. OEM music capsules / Dynamic Island-like status-bar panels are controlled by the device OS; this configuration exposes the standard Android media session that such features commonly use, but cannot force the capsule to appear on every device. Verify on the physical device and enable media notifications / music capsule in system settings if needed.
 - Sync YT depends on YouTube Music's current authenticated endpoints and can fail when the upstream service changes.
 - Full Gradle build was attempted but cannot run in this environment because `services.gradle.org` cannot be resolved. No APK build success is claimed.
+
+
+## Pembaruan 3.5.0
+- Panel musik kapsul (capsule/MusicCapsuleController.kt): overlay di atas layar saat lagu diputar dan Nexrify tidak dibuka. Ketuk 1x membuka aplikasi, tekan lama membuka panel penuh (judul, artis, seekbar, prev/play/next). Butuh izin "tampil di atas aplikasi lain", diatur dari Pengaturan > Panel musik kapsul.
+- Halaman pencarian sendiri (SearchPageScreen) dengan riwayat pencarian yang bisa dihapus satu per satu atau semuanya (SearchHistoryManager).
+- Ikon bergaya Iconsax di seluruh aplikasi (ui/icons/NexIcons.kt, digambar ulang sebagai vector Compose).
+- Bahasa realtime Indonesia dan Inggris: semua teks ada di i18n/Strings.kt dan diamati lewat LocalStrings, jadi ganti bahasa langsung berubah tanpa restart.
+- Loading baru (NexLoading): lingkaran berputar, progress bar, dan angka persen. Layar awal memakai progres asli dari pemuatan beranda.
+- Footer baru (NexFooter) di beranda dan Pengaturan, versi dibaca dari paket, bukan teks tetap.
+- Belum bisa dikompilasi di lingkungan pembuatan (tidak ada akses jaringan untuk Gradle). Cek build lewat GitHub Actions atau Android Studio.
