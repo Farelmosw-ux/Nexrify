@@ -1,5 +1,13 @@
 package id.nexrify.music.ui.screens
 
+import id.nexrify.music.ui.components.NexFooter
+
+import id.nexrify.music.ui.components.NexLoadingFill
+
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -28,9 +36,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -117,8 +122,8 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             val timeContext = id.nexrify.music.data.settings.TimeContext.resolve(localNow)
-            val greeting = timeContext.period
-            val description = if (viewModel.settingsManager.isEnglish()) timeContext.descriptionEn else timeContext.descriptionId
+            val greeting = S.period(timeContext.period)
+            val description = if (S.english) timeContext.descriptionEn else timeContext.descriptionId
             Column(modifier = Modifier.weight(1f)) {
                 Text(greeting, style = Typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
                 Spacer(modifier = Modifier.height(2.dp))
@@ -146,7 +151,7 @@ fun HomeScreen(
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = genre, style = Typography.labelMedium.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium),
+                    Text(text = S.genreLabel(genre), style = Typography.labelMedium.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium),
                         fontSize = 13.sp, color = if (isSelected) colors.background else colors.textPrimary)
                 }
             }
@@ -159,7 +164,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = colors.textPrimary)
+                    NexLoadingFill(active = true)
                 }
             } else if (searchResults.isEmpty()) {
                 Box(
@@ -167,7 +172,7 @@ fun HomeScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Tidak ada lagu ditemukan untuk $selectedGenre",
+                        text = S.noSongsFor(S.genreLabel(selectedGenre)),
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -206,7 +211,7 @@ fun HomeScreen(
                 if (recentlyPlayed.isNotEmpty()) {
                     item(key = "recently_played_header") {
                         Text(
-                            text = "Baru Diputar",
+                            text = S.recentlyPlayed,
                             style = Typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
@@ -235,7 +240,7 @@ fun HomeScreen(
                 if (favorites.isNotEmpty()) {
                     item(key = "favorites_header") {
                         Text(
-                            text = "Lagu Favorit",
+                            text = S.favoriteSongs,
                             style = Typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
@@ -269,7 +274,7 @@ fun HomeScreen(
                                 .padding(horizontal = 16.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = section.title,
+                                text = S.sectionTitle(section.title),
                                 style = Typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp,
@@ -278,7 +283,7 @@ fun HomeScreen(
                             if (section.subtitle.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = section.subtitle,
+                                    text = S.sectionSubtitle(section.subtitle),
                                     style = Typography.bodySmall,
                                     color = colors.textMuted
                                 )
@@ -306,14 +311,8 @@ fun HomeScreen(
                 }
 
                 item {
-                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
-                        Text(
-                            text = "Source code Nexrify bersifat privat dan tidak tersedia untuk dibagikan secara gratis. Aplikasi dapat diunduh melalui tautan resmi yang disediakan oleh pengembang.",
-                            style = Typography.bodySmall,
-                            color = colors.textMuted
-                        )
-                        Spacer(modifier = Modifier.height(100.dp))
-                    }
+                    NexFooter()
+                    Spacer(modifier = Modifier.height(96.dp))
                 }
             }
         } else {
@@ -390,7 +389,7 @@ fun AccountTopButton(
         if (account != null && account.avatarUrl.isNotBlank()) {
             AsyncImage(
                 model = account.avatarUrl,
-                contentDescription = "Account Profile",
+                contentDescription = S.cd("Account Profile"),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
@@ -404,8 +403,8 @@ fun AccountTopButton(
             )
         } else {
             Icon(
-                imageVector = Icons.Outlined.AccountCircle,
-                contentDescription = "Login YouTube",
+                imageVector = NexIcons.AccountCircle,
+                contentDescription = S.cd("Login YouTube"),
                 tint = colors.textSecondary,
                 modifier = Modifier.size(24.dp)
             )
@@ -461,7 +460,7 @@ fun YtmMusicCard(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_nexrify_play),
-                        contentDescription = "Playing",
+                        contentDescription = S.cd("Playing"),
                         tint = PureWhite,
                         modifier = Modifier.size(32.dp)
                     )
