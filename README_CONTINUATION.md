@@ -27,3 +27,11 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - Loading baru (NexLoading): lingkaran berputar, progress bar, dan angka persen. Layar awal memakai progres asli dari pemuatan beranda.
 - Footer baru (NexFooter) di beranda dan Pengaturan, versi dibaca dari paket, bukan teks tetap.
 - Belum bisa dikompilasi di lingkungan pembuatan (tidak ada akses jaringan untuk Gradle). Cek build lewat GitHub Actions atau Android Studio.
+
+## Revisi 3.5.1
+- Notifikasi musik anti terhapus: PersistentNotificationProvider menandai notifikasi ongoing dan no clear selama lagu diputar.
+- Kapsul tidak hilang saat memutar atau ganti lagu: ada jeda aman 4 detik, judul dan sampul terakhir dipertahankan, sampul punya cache, retry, dan placeholder.
+- Maghrib dihitung dari lokasi kasar pengguna (data/prayer/MaghribManager.kt), zona waktu mengikuti perangkat. Tanpa lokasi, tidak ada tebakan, sapaan Maghrib tidak tampil dan Pengaturan menjelaskan statusnya.
+- Waktu sapaan lain dibuat relatif terhadap Maghrib agar tidak bertabrakan.
+- Fitur Sync YT dihapus.
+- Nama dan foto profil diambil dari akun Google/YouTube dan disegarkan tiap aplikasi dibuka.
