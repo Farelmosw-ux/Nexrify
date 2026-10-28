@@ -149,7 +149,7 @@ Jika Anda ingin mengompilasi proyek secara lokal menggunakan Android Studio:
 
 ```bash
 # 1. Clone repositori
-git clone https://github.com/ayashiiiyo/nexrify.git
+git clone https://github.com/nexradstry/nexrify.git
 cd nexrify
 
 # 2. Berikan izin eksekusi gradlew (Linux/macOS)
