@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -52,6 +52,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.compose.runtime.CompositionLocalProvider
+import id.nexrify.music.capsule.AppVisibility
+import id.nexrify.music.i18n.LocalStrings
+import id.nexrify.music.i18n.S
+import id.nexrify.music.i18n.Strings
+import id.nexrify.music.ui.components.NexLoading
+import id.nexrify.music.ui.components.rememberEstimatedProgress
+import id.nexrify.music.ui.screens.SearchPageScreen
+import id.nexrify.music.ui.theme.FredokaFontFamily
 import id.nexrify.music.data.model.Track
 import id.nexrify.music.ui.components.FullPlayerSheet
 import id.nexrify.music.ui.components.MiniPlayer
@@ -71,6 +82,16 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MusicViewModel by viewModels()
 
+    override fun onStart() {
+        super.onStart()
+        AppVisibility.set(true)
+    }
+
+    override fun onStop() {
+        AppVisibility.set(false)
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -82,46 +103,57 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themeMode by viewModel.themeMode.collectAsState()
+            val language by viewModel.settingsManager.language.collectAsState()
+            val strings = remember(language) { Strings(viewModel.settingsManager.isEnglish()) }
+            val initialLoadDone by viewModel.initialLoadDone.collectAsState()
+
             var showLaunch by remember { mutableStateOf(true) }
-            val launchAlpha by animateFloatAsState(
-                targetValue = if (showLaunch) 1f else 0f,
-                animationSpec = tween(durationMillis = 260),
-                label = "nexrifyLaunchFade"
-            )
+            val loadProgress = rememberEstimatedProgress(active = !initialLoadDone)
+            LaunchedEffect(initialLoadDone) {
+                if (initialLoadDone) {
+                    delay(520) // beri waktu progress mencapai 100% sebelum layar loading hilang
+                    showLaunch = false
+                }
+            }
             LaunchedEffect(Unit) {
-                delay(420)
+                delay(15_000) // jaring pengaman kalau jaringan macet
                 showLaunch = false
             }
-            NexrifyTheme(themeMode = themeMode) {
-                Box(Modifier.fillMaxSize()) {
-                    MainAppScreen(viewModel = viewModel)
-                    AnimatedVisibility(
-                        visible = showLaunch,
-                        enter = fadeIn(tween(180)),
-                        exit = fadeOut(tween(260))
-                    ) {
-                        val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(colors.background)
-                                .alpha(launchAlpha)
-                                .padding(horizontal = 44.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+
+            CompositionLocalProvider(LocalStrings provides strings) {
+                NexrifyTheme(themeMode = themeMode) {
+                    Box(Modifier.fillMaxSize()) {
+                        MainAppScreen(viewModel = viewModel)
+                        AnimatedVisibility(
+                            visible = showLaunch,
+                            enter = fadeIn(tween(120)),
+                            exit = fadeOut(tween(300))
                         ) {
-                            Text(
-                                text = "Nexrify",
-                                color = colors.textPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
-                            )
-                            Spacer(Modifier.height(28.dp))
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)),
-                                color = colors.textPrimary,
-                                trackColor = colors.border
-                            )
+                            val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(colors.background)
+                                    .padding(horizontal = 44.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "Nexrify",
+                                    color = colors.textPrimary,
+                                    fontFamily = FredokaFontFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 38.sp
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = S.loadingSub,
+                                    color = colors.textMuted,
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(Modifier.height(36.dp))
+                                NexLoading(progress = loadProgress)
+                            }
                         }
                     }
                 }
@@ -153,7 +185,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
         Scaffold(
             containerColor = colors.background,
             bottomBar = {
-                NavigationBar(
+                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true) NavigationBar(
                     containerColor = colors.background,
                     tonalElevation = 0.dp
                 ) {
@@ -173,10 +205,10 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                             icon = {
                                 Icon(
                                     imageVector = screen.icon,
-                                    contentDescription = screen.title
+                                    contentDescription = screen.title(S)
                                 )
                             },
-                            label = { Text(screen.title) },
+                            label = { Text(screen.title(S)) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = colors.textPrimary,
                                 selectedTextColor = colors.textPrimary,
@@ -203,7 +235,17 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                         HomeScreen(viewModel = viewModel)
                     }
                     composable(Screen.Search.route) {
-                        SearchScreen(viewModel = viewModel)
+                        SearchScreen(onOpenSearchPage = { q -> navController.navigate(Screen.SearchPage.route(q)) })
+                    }
+                    composable(
+                        route = Screen.SearchPage.ROUTE,
+                        arguments = listOf(navArgument("q") { type = NavType.StringType; defaultValue = "" })
+                    ) { entry ->
+                        SearchPageScreen(
+                            viewModel = viewModel,
+                            initialQuery = entry.arguments?.getString("q").orEmpty(),
+                            onBack = { navController.popBackStack() }
+                        )
                     }
                     composable(Screen.Library.route) {
                         LibraryScreen(viewModel = viewModel)
