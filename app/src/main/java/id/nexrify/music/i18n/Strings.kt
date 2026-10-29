@@ -264,6 +264,23 @@ class Strings(val english: Boolean) {
     val maghribHomeHint get() = t("Aktifkan lokasi di Pengaturan biar sapaan Maghrib sesuai jadwal di kotamu.", "Turn on location in Settings so the Maghrib greeting follows your city's schedule.")
     val googleUser get() = t("Pengguna Google", "Google user")
 
+    // Antrian
+    val queueTitle get() = t("Antrian", "Queue")
+    fun queueCount(n: Int) = t("$n lagu", "$n songs")
+    val queuePlayed get() = t("Sudah diputar", "Played")
+    val queueNowPlaying get() = t("Sedang diputar", "Now playing")
+    val queueNext get() = t("Berikutnya", "Up next")
+    val queueEmpty get() = t("Antrian masih kosong", "Your queue is empty")
+    val queueEmptyHint get() = t("Putar lagu atau tambah lewat menu titik tiga di daftar lagu", "Play a song or add one from the three dot menu on any song")
+    val clearUpcoming get() = t("Bersihkan berikutnya", "Clear up next")
+    val playNextAction get() = t("Putar berikutnya", "Play next")
+    val addToQueueAction get() = t("Tambah ke antrian", "Add to queue")
+    val toastPlayNext get() = t("Akan diputar setelah lagu ini", "Will play after this song")
+    val toastQueued get() = t("Ditambahkan ke antrian", "Added to queue")
+    val moveUp get() = t("Naikkan", "Move up")
+    val moveDown get() = t("Turunkan", "Move down")
+    val removeFromQueue get() = t("Hapus dari antrian", "Remove from queue")
+
     // Perangkat audio
     fun deviceLabel(raw: String) = when {
         raw == "Phone Speaker" -> t("Speaker HP", "Phone speaker")
@@ -296,6 +313,7 @@ class Strings(val english: Boolean) {
             "Collapse Player" -> "Kecilkan pemutar"
             "Audio Output" -> "Output audio"
             "Add to playlist" -> "Tambah ke playlist"
+            "Queue" -> "Antrian"
             "New" -> "Baru"
             "Added" -> "Sudah ditambahkan"
             "Pause" -> "Jeda"
