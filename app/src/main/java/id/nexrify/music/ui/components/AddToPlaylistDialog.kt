@@ -117,6 +117,36 @@ fun AddToPlaylistDialog(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Aksi antrian
+            val queueContext = androidx.compose.ui.platform.LocalContext.current
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                QueueActionTile(
+                    icon = NexIcons.PlayArrow,
+                    text = S.playNextAction,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        viewModel.playNext(track)
+                        android.widget.Toast.makeText(queueContext, id.nexrify.music.i18n.currentStrings().toastPlayNext, android.widget.Toast.LENGTH_SHORT).show()
+                        onDismiss()
+                    }
+                )
+                QueueActionTile(
+                    icon = NexIcons.QueueMusic,
+                    text = S.addToQueueAction,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        viewModel.addToQueue(track)
+                        android.widget.Toast.makeText(queueContext, id.nexrify.music.i18n.currentStrings().toastQueued, android.widget.Toast.LENGTH_SHORT).show()
+                        onDismiss()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Create New Playlist Button
             Row(
                 modifier = Modifier
@@ -289,6 +319,35 @@ fun AddToPlaylistDialog(
                 }
             },
             containerColor = colors.background
+        )
+    }
+}
+
+@Composable
+private fun QueueActionTile(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val colors = NexrifyAppTheme.colors
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.card)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = text,
+            style = Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
