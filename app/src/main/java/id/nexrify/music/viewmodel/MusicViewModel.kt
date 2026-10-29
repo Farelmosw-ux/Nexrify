@@ -179,6 +179,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     private val playlistQueue = java.util.Collections.synchronizedList(mutableListOf<Track>())
     private var currentIndex = -1
+
+    // Lanjut dari terakhir: antrian dan posisi dipulihkan dari penyimpanan, lagu baru diputar setelah pengguna menekan play.
+    private val playbackStore = id.nexrify.music.data.playback.PlaybackStateStore(application)
+    private var restoredPending = false
+    private var restoredPositionMs = 0L
     private var progressJob: Job? = null
     private var suggestJob: Job? = null
     private var playJob: Job? = null
@@ -198,7 +203,50 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun restoreSnapshot() {
+        val snap = playbackStore.load() ?: return
+        playlistQueue.clear()
+        playlistQueue.addAll(snap.queue)
+        currentIndex = snap.index.coerceIn(0, snap.queue.lastIndex)
+        val track = snap.queue[currentIndex].let { t -> t.copy(isFavorite = _favorites.value.any { it.id == t.id }) }
+        _currentTrack.value = track
+        _playbackPosition.value = snap.positionMs
+        _duration.value = if (track.durationSeconds > 0) track.durationSeconds * 1000L else 0L
+        _isShuffle.value = snap.shuffle
+        _repeatMode.value = snap.repeatMode
+        restoredPositionMs = snap.positionMs
+        restoredPending = true
+    }
+
+    private fun saveSnapshot() {
+        val track = _currentTrack.value ?: return
+        val queue = synchronized(playlistQueue) { playlistQueue.toList() }.ifEmpty { listOf(track) }
+        val index = queue.indexOfFirst { it.id == track.id }.takeIf { it >= 0 } ?: currentIndex.coerceIn(0, queue.lastIndex)
+        playbackStore.save(
+            id.nexrify.music.data.playback.PlaybackStateStore.Snapshot(
+                queue = queue,
+                index = index,
+                positionMs = if (restoredPending) restoredPositionMs else _playbackPosition.value,
+                shuffle = _isShuffle.value,
+                repeatMode = _repeatMode.value
+            )
+        )
+    }
+
+    private fun resumeRestored(startMs: Long = restoredPositionMs) {
+        val track = _currentTrack.value ?: return
+        restoredPending = false
+        playTrack(track, startPositionMs = startMs)
+    }
+
     init {
+        restoreSnapshot()
+        viewModelScope.launch {
+            while (true) {
+                delay(5_000L)
+                if (_isPlaying.value) saveSnapshot()
+            }
+        }
         initializeMediaController()
         loadTrending()
         try {
@@ -239,6 +287,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
                     override fun onIsPlayingChanged(playing: Boolean) {
                         _isPlaying.value = playing
+                        saveSnapshot()
                         if (playing) {
                             _isLoadingTrack.value = false
                             startProgressTracking()
@@ -391,6 +440,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 isFavorite = _favorites.value.any { it.id == mediaId }
             )
         }
+        restoredPending = false
         _currentTrack.value = recovered
         _isPlaying.value = controller.isPlaying
         _playbackPosition.value = controller.currentPosition.coerceAtLeast(0L)
@@ -517,12 +567,13 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         playTrack(track, playlistQueue)
     }
 
-    fun playTrack(track: Track, newQueue: List<Track> = emptyList()) {
+    fun playTrack(track: Track, newQueue: List<Track> = emptyList(), startPositionMs: Long = 0L) {
         playJob?.cancel()
+        restoredPending = false
         playJob = viewModelScope.launch {
             _currentTrack.value = track
             _isLoadingTrack.value = true
-            _playbackPosition.value = 0L
+            _playbackPosition.value = startPositionMs
             _duration.value = if (track.durationSeconds > 0) track.durationSeconds * 1000L else 0L
 
             if (newQueue.isNotEmpty() && newQueue !== playlistQueue) {
@@ -538,6 +589,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     currentIndex = 0
                 }
             }
+
+            saveSnapshot()
 
             // Automix Radio: If queue is small (<= 2 tracks, e.g. played from search), fetch 50 radio tracks!
             if (playlistQueue.size <= 2) {
@@ -618,7 +671,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         mediaItemBuilder.setMimeType(resolvedStream.mimeType)
                     }
 
-                    controller.setMediaItem(mediaItemBuilder.build())
+                    controller.setMediaItem(mediaItemBuilder.build(), startPositionMs)
                     controller.prepare()
                     controller.play()
                 } else {
@@ -644,6 +697,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun togglePlayPause() {
+        // Aplikasi baru dibuka lagi: lagu terakhir belum dimuat ke pemutar, mulai dari posisi tersimpan.
+        if (restoredPending && mediaController?.currentMediaItem == null) {
+            resumeRestored()
+            return
+        }
         mediaController?.let { controller ->
             if (controller.isPlaying) {
                 controller.pause()
@@ -660,6 +718,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun seekTo(positionMs: Long) {
         val target = positionMs.coerceAtLeast(0L)
+        if (restoredPending && mediaController?.currentMediaItem == null) {
+            resumeRestored(target)
+            return
+        }
         _playbackPosition.value = target
         lastSeekTimestamp = System.currentTimeMillis()
         isSeeking = true
@@ -740,6 +802,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleShuffle() {
         _isShuffle.value = !_isShuffle.value
+        saveSnapshot()
     }
 
     fun toggleRepeat() {
@@ -749,6 +812,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             else -> Player.REPEAT_MODE_OFF
         }
         _repeatMode.value = next
+        saveSnapshot()
         mediaController?.repeatMode = if (next == Player.REPEAT_MODE_ONE) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         if (next == Player.REPEAT_MODE_ONE) {
             _currentTrack.value?.let { tasteManager.recordTrackRepeated(it) }
@@ -787,6 +851,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         try {
             getApplication<android.app.Application>().unregisterReceiver(mediaActionReceiver)
         } catch (_: Exception) {}
+        saveSnapshot()
         stopProgressTracking()
         suggestJob?.cancel()
         controllerFuture?.let { MediaController.releaseFuture(it) }
