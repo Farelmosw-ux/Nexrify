@@ -24,6 +24,8 @@ import id.nexrify.music.MainActivity
 import id.nexrify.music.NexrifyWidgetProvider
 import id.nexrify.music.R
 import id.nexrify.music.i18n.currentStrings
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
@@ -33,6 +35,51 @@ class PlaybackService : MediaSessionService() {
     private var player: Player? = null
     private var mediaSession: MediaSession? = null
     private var capsule: id.nexrify.music.capsule.MusicCapsuleController? = null
+    private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
+    private var favoriteJob: kotlinx.coroutines.Job? = null
+
+    @OptIn(UnstableApi::class)
+    private fun likeLayout(liked: Boolean): com.google.common.collect.ImmutableList<androidx.media3.session.CommandButton> {
+        val strings = currentStrings()
+        return com.google.common.collect.ImmutableList.of(
+            androidx.media3.session.CommandButton.Builder()
+                .setDisplayName(if (liked) strings.unlikeAction else strings.likeAction)
+                .setSessionCommand(androidx.media3.session.SessionCommand(ACTION_TOGGLE_LIKE, android.os.Bundle.EMPTY))
+                .setIconResId(if (liked) R.drawable.ic_heart_filled else R.drawable.ic_heart_outline)
+                .build()
+        )
+    }
+
+    @OptIn(UnstableApi::class)
+    private val sessionCallback = object : MediaSession.Callback {
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                .add(androidx.media3.session.SessionCommand(ACTION_TOGGLE_LIKE, android.os.Bundle.EMPTY))
+                .build()
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(commands)
+                .setCustomLayout(likeLayout(PlaybackBridge.isFavorite.value))
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: androidx.media3.session.SessionCommand,
+            args: android.os.Bundle
+        ): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
+            if (customCommand.customAction == ACTION_TOGGLE_LIKE) {
+                PlaybackBridge.onToggleFavorite?.invoke()
+                return com.google.common.util.concurrent.Futures.immediateFuture(
+                    androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS)
+                )
+            }
+            return super.onCustomCommand(session, controller, customCommand, args)
+        }
+    }
     private val artworkExecutor = Executors.newSingleThreadExecutor()
     @Volatile private var latestArtworkUrl: String? = null
     @Volatile private var latestArtworkTitle: String? = null
@@ -41,6 +88,7 @@ class PlaybackService : MediaSessionService() {
         const val CHANNEL_ID = "nexrify_playback_channel"
         const val NOTIFICATION_ID = 1001
         const val ACTION_NEXT = "id.nexrify.music.ACTION_NEXT"
+        const val ACTION_TOGGLE_LIKE = "id.nexrify.music.ACTION_TOGGLE_LIKE"
         const val ACTION_PREV = "id.nexrify.music.ACTION_PREV"
     }
 
@@ -165,7 +213,16 @@ class PlaybackService : MediaSessionService() {
 
         mediaSession = MediaSession.Builder(this, forwardingPlayer)
             .setSessionActivity(pendingIntent)
+            .setCallback(sessionCallback)
+            .setCustomLayout(likeLayout(PlaybackBridge.isFavorite.value))
             .build()
+
+        // Ikon hati di notifikasi ikut berubah saat lagu disuka atau batal disuka.
+        favoriteJob = serviceScope.launch {
+            PlaybackBridge.isFavorite.collect { liked ->
+                mediaSession?.setCustomLayout(likeLayout(liked))
+            }
+        }
 
         // Panel musik kapsul di atas layar (butuh izin tampil di atas aplikasi lain, diatur dari Pengaturan).
         capsule = id.nexrify.music.capsule.MusicCapsuleController(this, forwardingPlayer).also { it.start() }
@@ -238,6 +295,8 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         capsule?.destroy()
         capsule = null
+        favoriteJob?.cancel()
+        serviceScope.cancel()
         mediaSession?.run {
             player.release()
             release()
