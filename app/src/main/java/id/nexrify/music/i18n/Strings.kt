@@ -264,6 +264,9 @@ class Strings(val english: Boolean) {
     val maghribHomeHint get() = t("Aktifkan lokasi di Pengaturan biar sapaan Maghrib sesuai jadwal di kotamu.", "Turn on location in Settings so the Maghrib greeting follows your city's schedule.")
     val googleUser get() = t("Pengguna Google", "Google user")
 
+    val likeAction get() = t("Suka", "Like")
+    val unlikeAction get() = t("Batal suka", "Unlike")
+
     // Antrian
     val queueTitle get() = t("Antrian", "Queue")
     fun queueCount(n: Int) = t("$n lagu", "$n songs")
