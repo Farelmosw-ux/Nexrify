@@ -115,7 +115,10 @@ class PlaybackService : MediaSessionService() {
             .setMp4ExtractorFlags(androidx.media3.extractor.mp4.Mp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS)
             .setFragmentedMp4ExtractorFlags(androidx.media3.extractor.mp4.FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS)
 
-        val mediaSourceFactory = DefaultMediaSourceFactory(httpDataSourceFactory, extractorsFactory)
+        // DefaultDataSource memilih sendiri sumbernya: http untuk streaming dan file untuk lagu hasil unduhan offline.
+        // Sebelumnya hanya http, jadi lagu offline (file://) gagal diputar.
+        val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(this, httpDataSourceFactory)
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
 
         // Ultra-low latency buffering with robust fMP4/AAC headroom
         val loadControl = DefaultLoadControl.Builder()
