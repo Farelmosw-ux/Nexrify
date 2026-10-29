@@ -80,7 +80,12 @@ import id.nexrify.music.viewmodel.MusicViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: MusicViewModel by viewModels()
+    private val viewModel: MusicViewModel by lazy {
+        androidx.lifecycle.ViewModelProvider(
+            application as androidx.lifecycle.ViewModelStoreOwner,
+            androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        )[MusicViewModel::class.java]
+    }
 
     override fun onStart() {
         super.onStart()
