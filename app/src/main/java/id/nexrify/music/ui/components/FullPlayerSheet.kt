@@ -89,6 +89,7 @@ fun FullPlayerSheet(
 
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showQueue by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
     var isLyricsExpanded by remember { mutableStateOf(false) }
 
@@ -451,9 +452,9 @@ fun FullPlayerSheet(
                         )
                     }
 
-                    // Add to Playlist
+                    // Antrian lagu
                     IconButton(
-                        onClick = { showAddToPlaylist = true },
+                        onClick = { showQueue = true },
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
@@ -462,7 +463,7 @@ fun FullPlayerSheet(
                     ) {
                         Icon(
                             imageVector = NexIcons.QueueMusic,
-                            contentDescription = S.cd("Add to playlist"),
+                            contentDescription = S.cd("Queue"),
                             tint = colors.textPrimary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -528,6 +529,10 @@ fun FullPlayerSheet(
             viewModel = viewModel,
             onDismiss = { showAddToPlaylist = false }
         )
+    }
+
+    if (showQueue) {
+        QueueSheet(viewModel = viewModel, onDismiss = { showQueue = false })
     }
 
     if (showSettingsDialog) {
