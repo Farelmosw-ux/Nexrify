@@ -267,6 +267,11 @@ class Strings(val english: Boolean) {
     val likeAction get() = t("Suka", "Like")
     val unlikeAction get() = t("Batal suka", "Unlike")
 
+    // Mode offline
+    val offlineNotDownloaded get() = t("Lagu ini belum diunduh dan kamu lagi offline", "This song isn't downloaded and you're offline")
+    val offlineBanner get() = t("Lagi offline. Lagu yang sudah diunduh tetap bisa diputar.", "You're offline. Downloaded songs still play.")
+    val offlineBannerAction get() = t("Buka Offline", "Open Offline")
+
     // Unduhan offline
     val offlineTab get() = t("Offline", "Offline")
     val offlineTitle get() = t("Unduhan offline", "Offline downloads")
