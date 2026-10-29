@@ -66,7 +66,14 @@ fun LibraryScreen(
     val currentTrack by viewModel.currentTrack.collectAsState()
     val currentAccount by viewModel.authState.collectAsState()
 
-    var selectedTab by remember { mutableStateOf(0) } // 0: Liked Songs, 1: Playlists
+    var selectedTab by remember { mutableStateOf(0) } // 0: Liked Songs, 1: Playlists, 2: Offline
+    val openOffline by viewModel.openOfflineTab.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(openOffline) {
+        if (openOffline) {
+            selectedTab = 2
+            viewModel.consumeOfflineTab()
+        }
+    }
     var selectedPlaylistId by remember { mutableStateOf<String?>(null) }
     var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
