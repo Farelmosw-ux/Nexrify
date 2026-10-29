@@ -35,3 +35,8 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - Waktu sapaan lain dibuat relatif terhadap Maghrib agar tidak bertabrakan.
 - Fitur Sync YT dihapus.
 - Nama dan foto profil diambil dari akun Google/YouTube dan disegarkan tiap aplikasi dibuka.
+
+## Revisi 3.5.2: lanjut dari terakhir
+- data/playback/PlaybackStateStore.kt menyimpan antrian (jendela sekitar lagu aktif), lagu, posisi, mode acak dan ulang. Disimpan tiap pergantian lagu, jeda atau putar, dan tiap 5 detik saat memutar.
+- MusicViewModel memulihkan state saat dibuat. Lagu tidak langsung bunyi: mini player menampilkan lagu terakhir dalam keadaan jeda, dan saat tombol play atau seekbar ditekan lagu dimuat ulang (stream diambil ulang karena kedaluwarsa) lalu lanjut dari posisi tersimpan.
+- MusicViewModel kini dipegang di level aplikasi (NexrifyApplication sebagai ViewModelStoreOwner), sehingga tombol next dan prev di notifikasi dan kapsul tetap jalan walau Activity sudah ditutup selama proses masih hidup.
