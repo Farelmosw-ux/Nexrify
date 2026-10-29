@@ -51,3 +51,11 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - service/PlaybackBridge.kt: jembatan satu proses antara MusicViewModel dan layanan (status suka lagu aktif dan aksi toggle).
 - Notifikasi dan kontrol media sistem punya tombol hati (custom layout MediaSession, perintah ACTION_TOGGLE_LIKE) yang ikonnya berubah isi atau garis sesuai status.
 - Panel penuh kapsul punya tombol hati di sisi kiri kontrol. Keduanya memakai MusicViewModel.toggleFavorite, jadi favorit tersimpan dan sinkron dengan layar aplikasi.
+
+## Revisi 3.8.0: unduh offline dan perbaikan sampul kapsul
+- Perbaikan sampul kapsul: tiap kapsul dipasang ulang (misalnya setelah keluar dari aplikasi), view barunya kosong sementara key sampul tidak berubah sehingga tidak dimuat lagi. Sekarang sampul terakhir dipasang ulang saat view dibuat.
+- data/download/OfflineManager.kt: unduhan disimpan di filesDir/offline/<hash akun>/ (privat aplikasi, tidak masuk galeri atau file manager), daftar dan file terikat ke akun yang login, tanpa login memakai folder "guest". Unduh bertahap pakai header Range, antrean satu per satu, sampul ikut disimpan.
+- service/OfflineDownloadService.kt: foreground service dataSync dengan notifikasi progres. Izin FOREGROUND_SERVICE_DATA_SYNC ditambahkan.
+- MusicViewModel.playTrack memutar dari file lokal kalau lagu sudah diunduh (tanpa internet), termasuk sampul lokal untuk notifikasi dan kapsul.
+- Koleksi punya tab Offline (OfflineTab.kt): putar semua, acak, hapus satu atau semua, unduhan berjalan dengan progres, batalkan, coba lagi. Menu titik tiga lagu punya tombol Unduh offline, Mengunduh, atau Hapus unduhan sesuai status.
+- Logout tidak menghapus file, hanya menyembunyikannya sampai akun yang sama masuk lagi.
