@@ -40,3 +40,9 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - data/playback/PlaybackStateStore.kt menyimpan antrian (jendela sekitar lagu aktif), lagu, posisi, mode acak dan ulang. Disimpan tiap pergantian lagu, jeda atau putar, dan tiap 5 detik saat memutar.
 - MusicViewModel memulihkan state saat dibuat. Lagu tidak langsung bunyi: mini player menampilkan lagu terakhir dalam keadaan jeda, dan saat tombol play atau seekbar ditekan lagu dimuat ulang (stream diambil ulang karena kedaluwarsa) lalu lanjut dari posisi tersimpan.
 - MusicViewModel kini dipegang di level aplikasi (NexrifyApplication sebagai ViewModelStoreOwner), sehingga tombol next dan prev di notifikasi dan kapsul tetap jalan walau Activity sudah ditutup selama proses masih hidup.
+
+## Revisi 3.6.0: antrian lagu
+- Perbaikan build: MaghribManager tidak lagi memakai LocationManagerCompat.getCurrentLocation (overload ambigu), diganti requestSingleUpdate dengan LocationListener dan batas tunggu 30 detik.
+- QueueSheet (ui/components/QueueSheet.kt), dibuka dari tombol antrian di pemutar penuh: ketuk untuk loncat, naikkan atau turunkan, hapus, bersihkan lagu berikutnya. Lagu aktif tidak bisa dihapus.
+- Menu titik tiga di daftar lagu (AddToPlaylistDialog) punya "Putar berikutnya" dan "Tambah ke antrian".
+- MusicViewModel: queue, queueIndex, playFromQueue, removeFromQueue, moveInQueue, clearUpcoming, playNext, addToQueue. Perubahan antrian ikut tersimpan untuk fitur lanjut dari terakhir.
