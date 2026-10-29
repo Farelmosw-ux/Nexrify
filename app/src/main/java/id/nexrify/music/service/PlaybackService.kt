@@ -244,12 +244,16 @@ class PlaybackService : MediaSessionService() {
             artworkExecutor.execute {
                 var connection: HttpURLConnection? = null
                 try {
-                    connection = (URL(artworkUrl).openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 8_000
-                        readTimeout = 8_000
-                        instanceFollowRedirects = true
+                    val bitmap = if (artworkUrl.startsWith("file:")) {
+                        BitmapFactory.decodeFile(android.net.Uri.parse(artworkUrl).path)
+                    } else {
+                        connection = (URL(artworkUrl).openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 8_000
+                            readTimeout = 8_000
+                            instanceFollowRedirects = true
+                        }
+                        connection.inputStream.use { BitmapFactory.decodeStream(it) }
                     }
-                    val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) }
                     if (bitmap != null && latestArtworkUrl == artworkUrl) {
                         NexrifyWidgetProvider.updateArtwork(this, bitmap)
                     }
