@@ -183,6 +183,33 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private var currentIndex = -1
 
     private val offline = id.nexrify.music.data.download.OfflineManager.getInstance()
+    private val network = id.nexrify.music.data.network.NetworkMonitor.getInstance()
+    val isOnline = network.online
+
+    private var consecutiveErrors = 0
+    private var forceNetworkOnce: String? = null
+
+    private val _openOfflineTab = MutableStateFlow(false)
+    val openOfflineTab = _openOfflineTab.asStateFlow()
+    fun requestOfflineTab() { _openOfflineTab.value = true }
+    fun consumeOfflineTab() { _openOfflineTab.value = false }
+
+    /** Indeks lagu berikutnya yang sudah diunduh, dipakai saat tidak ada internet. -1 kalau tidak ada. */
+    private fun nextOfflineIndex(): Int {
+        val q = synchronized(playlistQueue) { playlistQueue.toList() }
+        val playable = q.indices.filter { it != currentIndex && offline.isDownloaded(q[it].id) }
+        if (playable.isEmpty()) return -1
+        if (_isShuffle.value) return playable.random()
+        playable.firstOrNull { it > currentIndex }?.let { return it }
+        return if (_repeatMode.value == Player.REPEAT_MODE_ALL) playable.first() else -1
+    }
+
+    private fun prevOfflineIndex(): Int {
+        val q = synchronized(playlistQueue) { playlistQueue.toList() }
+        val playable = q.indices.filter { it != currentIndex && offline.isDownloaded(q[it].id) }
+        if (playable.isEmpty()) return -1
+        return playable.lastOrNull { it < currentIndex } ?: playable.last()
+    }
     val offlineTracks = offline.offlineTracks
     val downloads = offline.downloads
     fun downloadTrack(track: Track) = offline.enqueue(track, settingsManager.audioQuality.value)
@@ -344,6 +371,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         PlaybackBridge.onToggleFavorite = { toggleCurrentFavorite() }
+        viewModelScope.launch { _isLoadingTrack.collect { PlaybackBridge.isLoading.value = it } }
         viewModelScope.launch {
             kotlinx.coroutines.flow.combine(_currentTrack, _favorites) { track, favs ->
                 track != null && favs.any { it.id == track.id }
@@ -396,6 +424,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
                     override fun onIsPlayingChanged(playing: Boolean) {
                         _isPlaying.value = playing
+                        if (playing) consecutiveErrors = 0
                         saveSnapshot()
                         if (playing) {
                             _isLoadingTrack.value = false
@@ -458,6 +487,42 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
                     override fun onPlayerError(error: PlaybackException) {
                         Log.e("NexrifyMusicViewModel", "Player error: ${error.message}", error)
+                        consecutiveErrors++
+                        val failing = _currentTrack.value
+                        // Terlalu banyak gagal beruntun: berhenti, jangan loncat terus dari lagu ke lagu.
+                        if (consecutiveErrors >= 4) {
+                            consecutiveErrors = 0
+                            _isLoadingTrack.value = false
+                            _isPlaying.value = false
+                            mediaController?.pause()
+                            return
+                        }
+                        // Lagu hasil unduhan bermasalah: jangan loncat ke lagu lain.
+                        // Kalau ada internet putar lewat streaming, kalau tidak ada berhenti saja.
+                        if (failing != null && failing.streamUrl?.startsWith("file:") == true) {
+                            _isLoadingTrack.value = false
+                            _isPlaying.value = false
+                            if (network.isOnline()) {
+                                forceNetworkOnce = failing.id
+                                playTrack(failing)
+                            } else {
+                                mediaController?.pause()
+                            }
+                            return
+                        }
+                        // Streaming gagal karena tidak ada internet: pindah ke lagu offline kalau ada, bukan lagu streaming lain.
+                        if (!network.isOnline()) {
+                            _isLoadingTrack.value = false
+                            _isPlaying.value = false
+                            val next = nextOfflineIndex()
+                            if (next >= 0) {
+                                currentIndex = next
+                                playTrack(playlistQueue[next])
+                            } else {
+                                mediaController?.pause()
+                            }
+                            return
+                        }
                         val track = _currentTrack.value
                         if (track != null && track.streamUrl != null && !hasRetriedFallback) {
                             hasRetriedFallback = true
@@ -677,6 +742,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun playTrack(track: Track, newQueue: List<Track> = emptyList(), startPositionMs: Long = 0L) {
+        // Tanpa internet hanya lagu yang sudah diunduh yang bisa diputar.
+        if (!offline.isDownloaded(track.id) && !network.isOnline()) {
+            android.widget.Toast.makeText(
+                getApplication(),
+                id.nexrify.music.i18n.currentStrings().offlineNotDownloaded,
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            _isLoadingTrack.value = false
+            return
+        }
         playJob?.cancel()
         restoredPending = false
         playJob = viewModelScope.launch {
@@ -703,7 +778,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             saveSnapshot()
 
             // Automix Radio: If queue is small (<= 2 tracks, e.g. played from search), fetch 50 radio tracks!
-            if (playlistQueue.size <= 2) {
+            if (playlistQueue.size <= 2 && network.isOnline()) {
                 launch(Dispatchers.IO) {
                     try {
                         val radioTracks = repository.getRadioTracks(track.id)
@@ -755,7 +830,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             hasRetriedFallback = false
             trackStartTime = System.currentTimeMillis()
             // Lagu yang sudah diunduh diputar dari file di aplikasi, tanpa internet.
-            val localFile = offline.localFile(track.id)
+            val localFile = if (forceNetworkOnce == track.id) null else offline.localFile(track.id)
+            if (forceNetworkOnce == track.id) forceNetworkOnce = null
             val resolvedStream = if (localFile != null) {
                 id.nexrify.music.data.remote.ResolvedStream(Uri.fromFile(localFile).toString(), offline.mimeOf(track.id))
             } else {
@@ -871,7 +947,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _currentTrack.value?.let { playTrack(it) }
             return
         }
-        val nextIndex = if (_isShuffle.value) {
+        val nextIndex = if (!network.isOnline()) {
+            nextOfflineIndex()
+        } else if (_isShuffle.value) {
             (0 until playlistQueue.size).random()
         } else if (currentIndex + 1 < playlistQueue.size) {
             currentIndex + 1
@@ -886,7 +964,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             playTrack(playlistQueue[nextIndex])
 
             // When nearing the end of the queue, auto-replenish with more radio tracks!
-            if (playlistQueue.size - nextIndex <= 3 && playlistQueue.isNotEmpty()) {
+            if (playlistQueue.size - nextIndex <= 3 && playlistQueue.isNotEmpty() && network.isOnline()) {
                 val seed = playlistQueue[nextIndex]
                 viewModelScope.launch(Dispatchers.IO) {
                     try {
@@ -913,11 +991,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 tasteManager.recordTrackPlayed(current)
             }
         }
-        val prevIndex = if (currentIndex - 1 >= 0) {
+        val prevIndex = if (!network.isOnline()) {
+            prevOfflineIndex()
+        } else if (currentIndex - 1 >= 0) {
             currentIndex - 1
         } else {
             playlistQueue.size - 1
         }
+        if (prevIndex < 0) return
         currentIndex = prevIndex
         playTrack(playlistQueue[prevIndex])
     }
