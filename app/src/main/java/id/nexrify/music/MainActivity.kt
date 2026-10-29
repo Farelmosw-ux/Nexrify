@@ -1,5 +1,9 @@
 package id.nexrify.music
 
+import androidx.compose.foundation.clickable
+
+import androidx.compose.foundation.layout.Row
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -231,10 +235,43 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    val online by viewModel.isOnline.collectAsState()
+                    if (!online) {
+                        val bannerColors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(bannerColors.card)
+                                .clickable {
+                                    viewModel.requestOfflineTab()
+                                    navController.navigate(Screen.Library.route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                                .padding(horizontal = 16.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = S.offlineBanner,
+                                color = bannerColors.textSecondary,
+                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = S.offlineBannerAction,
+                                color = bannerColors.textPrimary,
+                                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 NavHost(
                     navController = navController,
                     startDestination = Screen.Home.route,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.weight(1f).fillMaxWidth()
                 ) {
                     composable(Screen.Home.route) {
                         HomeScreen(viewModel = viewModel)
@@ -255,6 +292,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                     composable(Screen.Library.route) {
                         LibraryScreen(viewModel = viewModel)
                     }
+                }
                 }
 
                 // Floating MiniPlayer above bottom nav bar
