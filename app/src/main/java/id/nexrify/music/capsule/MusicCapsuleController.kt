@@ -33,6 +33,7 @@ import androidx.media3.common.Player
 import id.nexrify.music.MainActivity
 import id.nexrify.music.R
 import id.nexrify.music.data.settings.SettingsManager
+import id.nexrify.music.service.PlaybackBridge
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
@@ -79,6 +80,7 @@ class MusicCapsuleController(
     private lateinit var elapsedView: TextView
     private lateinit var totalView: TextView
     private lateinit var playPauseView: ImageView
+    private lateinit var heartView: ImageView
     private lateinit var headerRow: LinearLayout
     private lateinit var textColumn: LinearLayout
 
@@ -115,6 +117,7 @@ class MusicCapsuleController(
                 return
             }
             if (!attached) return
+            updateHeart()
             updateProgress()
             // Kapsul yang dijeda terlalu lama disembunyikan, panel penuh ikut menutup sendiri.
             if (!player.isPlaying && !expanded && System.currentTimeMillis() - pausedSince > PAUSED_HIDE_MS) {
@@ -374,15 +377,23 @@ class MusicCapsuleController(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
+        heartView = controlButton(R.drawable.ic_heart_outline) {
+            PlaybackBridge.onToggleFavorite?.invoke()
+            handler.postDelayed({ updateHeart() }, 150L)
+            scheduleAutoCollapse()
+        }
         val prev = controlButton(R.drawable.ic_nexrify_rewind) { player.seekToPrevious(); scheduleAutoCollapse() }
         playPauseView = controlButton(R.drawable.ic_nexrify_pause) {
             if (player.isPlaying) player.pause() else player.play()
             scheduleAutoCollapse()
         }
         val next = controlButton(R.drawable.ic_nexrify_fast_forward) { player.seekToNext(); scheduleAutoCollapse() }
+        controls.addView(heartView, LinearLayout.LayoutParams(dp(52), dp(48)))
         controls.addView(prev, LinearLayout.LayoutParams(dp(64), dp(48)))
         controls.addView(playPauseView, LinearLayout.LayoutParams(dp(72), dp(48)))
         controls.addView(next, LinearLayout.LayoutParams(dp(64), dp(48)))
+        // Penyeimbang di kanan supaya tombol putar tetap di tengah.
+        controls.addView(View(context), LinearLayout.LayoutParams(dp(52), dp(48)))
         expandedGroup.addView(controls, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
         content.addView(expandedGroup, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
@@ -463,6 +474,7 @@ class MusicCapsuleController(
             if (player.isPlaying || player.playWhenReady) R.drawable.ic_nexrify_pause else R.drawable.ic_nexrify_play
         )
         bindArtwork(md, itemMd)
+        updateHeart()
         updateProgress()
         view.requestLayout()
     }
@@ -577,6 +589,13 @@ class MusicCapsuleController(
         } catch (_: Throwable) {
             null
         }
+    }
+
+    private fun updateHeart() {
+        if (!attached) return
+        heartView.setImageResource(
+            if (PlaybackBridge.isFavorite.value) R.drawable.ic_heart_filled else R.drawable.ic_heart_outline
+        )
     }
 
     private fun updateProgress() {
