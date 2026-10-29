@@ -59,3 +59,9 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - MusicViewModel.playTrack memutar dari file lokal kalau lagu sudah diunduh (tanpa internet), termasuk sampul lokal untuk notifikasi dan kapsul.
 - Koleksi punya tab Offline (OfflineTab.kt): putar semua, acak, hapus satu atau semua, unduhan berjalan dengan progres, batalkan, coba lagi. Menu titik tiga lagu punya tombol Unduh offline, Mengunduh, atau Hapus unduhan sesuai status.
 - Logout tidak menghapus file, hanya menyembunyikannya sampai akun yang sama masuk lagi.
+
+## Revisi 3.8.1: perbaikan putar offline dan kapsul
+- Penyebab lagu offline tidak mau diputar: DefaultMediaSourceFactory hanya diberi DefaultHttpDataSource.Factory sehingga URI file:// ditolak. Sekarang memakai DefaultDataSource.Factory (http, file, content).
+- Setelah error pemutaran, ViewModel tidak lagi loncat terus ke lagu streaming: lagu offline yang error tidak diloncati (streaming ulang kalau ada internet, berhenti kalau tidak ada), gagal beruntun 4 kali berhenti, tanpa internet next dan prev hanya memilih lagu yang sudah diunduh, radio otomatis tidak jalan saat offline, memilih lagu yang belum diunduh saat offline menampilkan pesan.
+- data/network/NetworkMonitor.kt memantau koneksi, dan MainActivity menampilkan banner offline yang membuka tab Offline.
+- Kapsul: hanya tampil selama musik diputar atau sedang menyiapkan lagu (PlaybackBridge.isLoading). Musik dijeda atau dimatikan: kapsul hilang otomatis setelah jeda 2 detik, kecuali panel penuh yang sedang dibuka.
