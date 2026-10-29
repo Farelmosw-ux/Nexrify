@@ -182,6 +182,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val playlistQueue = java.util.Collections.synchronizedList(mutableListOf<Track>())
     private var currentIndex = -1
 
+    private val offline = id.nexrify.music.data.download.OfflineManager.getInstance()
+    val offlineTracks = offline.offlineTracks
+    val downloads = offline.downloads
+    fun downloadTrack(track: Track) = offline.enqueue(track, settingsManager.audioQuality.value)
+    fun retryDownload(trackId: String) = offline.retry(trackId, settingsManager.audioQuality.value)
+    fun cancelDownload(trackId: String) = offline.cancel(trackId)
+    fun deleteOffline(trackId: String) = offline.delete(trackId)
+    fun deleteAllOffline() = offline.deleteAll()
+    fun offlineThumb(trackId: String): java.io.File? = offline.localThumb(trackId)
+
     private val _queueFlow = MutableStateFlow<List<Track>>(emptyList())
     /** Salinan antrian untuk ditampilkan di UI. */
     val queue = _queueFlow.asStateFlow()
@@ -744,8 +754,18 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 // Resolve direct audio stream URL via NewPipeExtractor with user chosen Audio Quality!
             hasRetriedFallback = false
             trackStartTime = System.currentTimeMillis()
-            val resolvedStream = repository.getAudioStream(track.url, settingsManager.audioQuality.value)
-            val bestThumbnail = repository.resolveBestThumbnail(track)
+            // Lagu yang sudah diunduh diputar dari file di aplikasi, tanpa internet.
+            val localFile = offline.localFile(track.id)
+            val resolvedStream = if (localFile != null) {
+                id.nexrify.music.data.remote.ResolvedStream(Uri.fromFile(localFile).toString(), offline.mimeOf(track.id))
+            } else {
+                repository.getAudioStream(track.url, settingsManager.audioQuality.value)
+            }
+            val bestThumbnail = if (localFile != null) {
+                offline.localThumb(track.id)?.let { Uri.fromFile(it).toString() } ?: track.thumbnailUrl
+            } else {
+                repository.resolveBestThumbnail(track)
+            }
             if (resolvedStream != null) {
                 val updatedTrack = track.copy(
                     streamUrl = resolvedStream.url,
