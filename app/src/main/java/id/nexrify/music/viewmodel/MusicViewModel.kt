@@ -180,6 +180,91 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val playlistQueue = java.util.Collections.synchronizedList(mutableListOf<Track>())
     private var currentIndex = -1
 
+    private val _queueFlow = MutableStateFlow<List<Track>>(emptyList())
+    /** Salinan antrian untuk ditampilkan di UI. */
+    val queue = _queueFlow.asStateFlow()
+    private val _queueIndex = MutableStateFlow(-1)
+    val queueIndex = _queueIndex.asStateFlow()
+
+    private fun publishQueue() {
+        _queueFlow.value = synchronized(playlistQueue) { playlistQueue.toList() }
+        _queueIndex.value = currentIndex
+    }
+
+    fun playFromQueue(index: Int) {
+        val track = synchronized(playlistQueue) { playlistQueue.getOrNull(index) } ?: return
+        currentIndex = index
+        playTrack(track)
+    }
+
+    fun removeFromQueue(index: Int) {
+        synchronized(playlistQueue) {
+            if (index !in playlistQueue.indices || index == currentIndex) return
+            playlistQueue.removeAt(index)
+            if (index < currentIndex) currentIndex--
+        }
+        publishQueue()
+        saveSnapshot()
+    }
+
+    fun moveInQueue(from: Int, to: Int) {
+        synchronized(playlistQueue) {
+            if (from !in playlistQueue.indices || to !in playlistQueue.indices || from == to) return
+            val item = playlistQueue.removeAt(from)
+            playlistQueue.add(to, item)
+            currentIndex = when {
+                currentIndex == from -> to
+                from < currentIndex && to >= currentIndex -> currentIndex - 1
+                from > currentIndex && to <= currentIndex -> currentIndex + 1
+                else -> currentIndex
+            }
+        }
+        publishQueue()
+        saveSnapshot()
+    }
+
+    fun clearUpcoming() {
+        synchronized(playlistQueue) {
+            if (currentIndex < 0 || currentIndex >= playlistQueue.size) return
+            while (playlistQueue.size > currentIndex + 1) playlistQueue.removeAt(playlistQueue.size - 1)
+        }
+        publishQueue()
+        saveSnapshot()
+    }
+
+    /** Sisipkan lagu tepat setelah lagu yang sedang diputar. Kalau belum ada yang diputar, langsung diputar. */
+    fun playNext(track: Track) {
+        val current = _currentTrack.value
+        if (current == null || synchronized(playlistQueue) { playlistQueue.isEmpty() }) {
+            playTrackFromSearch(track)
+            return
+        }
+        if (current.id == track.id) return
+        synchronized(playlistQueue) {
+            val existing = playlistQueue.indexOfFirst { it.id == track.id }
+            if (existing >= 0) {
+                playlistQueue.removeAt(existing)
+                if (existing < currentIndex) currentIndex--
+            }
+            playlistQueue.add((currentIndex + 1).coerceIn(0, playlistQueue.size), track.copy(streamUrl = null))
+        }
+        publishQueue()
+        saveSnapshot()
+    }
+
+    /** Tambahkan lagu ke akhir antrian (dilewati kalau sudah ada). */
+    fun addToQueue(track: Track) {
+        if (_currentTrack.value == null || synchronized(playlistQueue) { playlistQueue.isEmpty() }) {
+            playTrackFromSearch(track)
+            return
+        }
+        synchronized(playlistQueue) {
+            if (playlistQueue.none { it.id == track.id }) playlistQueue.add(track.copy(streamUrl = null))
+        }
+        publishQueue()
+        saveSnapshot()
+    }
+
     // Lanjut dari terakhir: antrian dan posisi dipulihkan dari penyimpanan, lagu baru diputar setelah pengguna menekan play.
     private val playbackStore = id.nexrify.music.data.playback.PlaybackStateStore(application)
     private var restoredPending = false
@@ -216,6 +301,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _repeatMode.value = snap.repeatMode
         restoredPositionMs = snap.positionMs
         restoredPending = true
+        publishQueue()
     }
 
     private fun saveSnapshot() {
@@ -590,6 +676,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
+            publishQueue()
             saveSnapshot()
 
             // Automix Radio: If queue is small (<= 2 tracks, e.g. played from search), fetch 50 radio tracks!
@@ -601,6 +688,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                             val existingIds = playlistQueue.map { it.id }.toSet()
                             val freshTracks = radioTracks.filter { it.id !in existingIds }
                             playlistQueue.addAll(freshTracks)
+                            publishQueue()
                             if (playlistQueue.size > 1) {
                                 repository.getAudioStreamUrl(playlistQueue[1].url, settingsManager.audioQuality.value)
                             }
@@ -773,6 +861,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         val existingIds = playlistQueue.map { it.id }.toSet()
                         val toAdd = freshRadio.filter { it.id !in existingIds }
                         playlistQueue.addAll(toAdd)
+                        publishQueue()
                     } catch (_: Exception) {}
                 }
             }
