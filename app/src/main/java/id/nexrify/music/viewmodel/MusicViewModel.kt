@@ -1,5 +1,7 @@
 package id.nexrify.music.viewmodel
 
+import id.nexrify.music.service.PlaybackBridge
+
 import android.app.Application
 import android.content.ComponentName
 import android.graphics.Bitmap
@@ -325,7 +327,18 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         playTrack(track, startPositionMs = startMs)
     }
 
+    /** Suka atau batal suka lagu yang sedang diputar (dipakai notifikasi dan kapsul). */
+    fun toggleCurrentFavorite() {
+        _currentTrack.value?.let { toggleFavorite(it) }
+    }
+
     init {
+        PlaybackBridge.onToggleFavorite = { toggleCurrentFavorite() }
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(_currentTrack, _favorites) { track, favs ->
+                track != null && favs.any { it.id == track.id }
+            }.collect { PlaybackBridge.isFavorite.value = it }
+        }
         restoreSnapshot()
         viewModelScope.launch {
             while (true) {
@@ -941,6 +954,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             getApplication<android.app.Application>().unregisterReceiver(mediaActionReceiver)
         } catch (_: Exception) {}
         saveSnapshot()
+        PlaybackBridge.onToggleFavorite = null
         stopProgressTracking()
         suggestJob?.cancel()
         controllerFuture?.let { MediaController.releaseFuture(it) }
