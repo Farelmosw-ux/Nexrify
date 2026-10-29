@@ -108,7 +108,11 @@ fun LibraryScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (selectedTab == 0) S.likedCount(favorites.size) else S.playlistCount(playlists.size),
+                        text = when (selectedTab) {
+                            0 -> S.likedCount(favorites.size)
+                            1 -> S.playlistCount(playlists.size)
+                            else -> S.offlineTitle
+                        },
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -154,6 +158,22 @@ fun LibraryScreen(
                         text = S.playlistsTab(playlists.size),
                         style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium),
                         color = if (selectedTab == 1) colors.background else colors.textPrimary
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (selectedTab == 2) colors.accent else colors.card)
+                        .border(1.dp, if (selectedTab == 2) colors.accent else colors.border, RoundedCornerShape(20.dp))
+                        .clickable { selectedTab = 2 }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = S.offlineTab,
+                        style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium),
+                        color = if (selectedTab == 2) colors.background else colors.textPrimary
                     )
                 }
             }
@@ -205,6 +225,8 @@ fun LibraryScreen(
                         }
                     }
                 }
+            } else if (selectedTab == 2) {
+                OfflineTab(viewModel = viewModel)
             } else {
                 // Tab 1: Playlists
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
