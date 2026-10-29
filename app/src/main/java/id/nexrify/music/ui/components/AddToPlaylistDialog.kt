@@ -145,6 +145,43 @@ fun AddToPlaylistDialog(
                 )
             }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Unduh offline: status mengikuti lagu ini
+            val offlineTracks by viewModel.offlineTracks.collectAsState()
+            val downloads by viewModel.downloads.collectAsState()
+            val isDownloaded = offlineTracks.any { it.track.id == track.id }
+            val downloadState = downloads[track.id]?.state
+            QueueActionTile(
+                icon = if (isDownloaded) NexIcons.DeleteOutline else NexIcons.Download,
+                text = when {
+                    isDownloaded -> S.downloadedTile
+                    downloadState is id.nexrify.music.data.download.DownloadState.Downloading ->
+                        S.downloadingTile((downloadState.progress * 100f).toInt())
+                    downloadState == id.nexrify.music.data.download.DownloadState.Queued -> S.downloadQueuedTile
+                    else -> S.downloadTile
+                },
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val strings = id.nexrify.music.i18n.currentStrings()
+                    when {
+                        isDownloaded -> {
+                            viewModel.deleteOffline(track.id)
+                            android.widget.Toast.makeText(queueContext, strings.toastDownloadRemoved, android.widget.Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                        }
+                        downloadState != null && downloadState !is id.nexrify.music.data.download.DownloadState.Failed -> {
+                            viewModel.cancelDownload(track.id)
+                        }
+                        else -> {
+                            viewModel.downloadTrack(track)
+                            android.widget.Toast.makeText(queueContext, strings.toastDownloadStarted, android.widget.Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                        }
+                    }
+                }
+            )
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // Create New Playlist Button
