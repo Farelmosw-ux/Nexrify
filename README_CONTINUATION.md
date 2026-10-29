@@ -46,3 +46,8 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - QueueSheet (ui/components/QueueSheet.kt), dibuka dari tombol antrian di pemutar penuh: ketuk untuk loncat, naikkan atau turunkan, hapus, bersihkan lagu berikutnya. Lagu aktif tidak bisa dihapus.
 - Menu titik tiga di daftar lagu (AddToPlaylistDialog) punya "Putar berikutnya" dan "Tambah ke antrian".
 - MusicViewModel: queue, queueIndex, playFromQueue, removeFromQueue, moveInQueue, clearUpcoming, playNext, addToQueue. Perubahan antrian ikut tersimpan untuk fitur lanjut dari terakhir.
+
+## Revisi 3.7.0: tombol suka di notifikasi dan kapsul
+- service/PlaybackBridge.kt: jembatan satu proses antara MusicViewModel dan layanan (status suka lagu aktif dan aksi toggle).
+- Notifikasi dan kontrol media sistem punya tombol hati (custom layout MediaSession, perintah ACTION_TOGGLE_LIKE) yang ikonnya berubah isi atau garis sesuai status.
+- Panel penuh kapsul punya tombol hati di sisi kiri kontrol. Keduanya memakai MusicViewModel.toggleFavorite, jadi favorit tersimpan dan sinkron dengan layar aplikasi.
