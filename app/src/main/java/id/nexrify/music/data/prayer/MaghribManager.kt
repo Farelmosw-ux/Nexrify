@@ -3,10 +3,13 @@ package id.nexrify.music.data.prayer
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import androidx.core.content.ContextCompat
-import androidx.core.location.LocationManagerCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,23 +92,43 @@ class MaghribManager private constructor(private val context: Context) {
             return
         }
         requesting = true
-        try {
-            LocationManagerCompat.getCurrentLocation(
-                lm, provider, null, ContextCompat.getMainExecutor(context)
-            ) { location ->
-                requesting = false
-                if (location != null) {
-                    accept(location)
-                } else if (usablePlace() == null) {
-                    _status.value = Status.UNAVAILABLE
-                }
+        val mainHandler = Handler(Looper.getMainLooper())
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                finish(lm, this, mainHandler)
+                accept(location)
             }
+
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) = Unit
+            override fun onProviderEnabled(provider: String) = Unit
+            override fun onProviderDisabled(provider: String) = Unit
+        }
+        try {
+            @Suppress("DEPRECATION")
+            lm.requestSingleUpdate(provider, listener, Looper.getMainLooper())
+            // Kalau tidak ada fix dalam 30 detik, berhenti menunggu.
+            mainHandler.postDelayed({
+                if (requesting) {
+                    finish(lm, listener, mainHandler)
+                    if (usablePlace() == null) _status.value = Status.UNAVAILABLE
+                }
+            }, 30_000L)
         } catch (_: SecurityException) {
             requesting = false
             _status.value = Status.NO_PERMISSION
         } catch (_: Exception) {
             requesting = false
             if (usablePlace() == null) _status.value = Status.UNAVAILABLE
+        }
+    }
+
+    private fun finish(lm: LocationManager, listener: LocationListener, handler: Handler) {
+        requesting = false
+        handler.removeCallbacksAndMessages(null)
+        try {
+            lm.removeUpdates(listener)
+        } catch (_: Exception) {
         }
     }
 
