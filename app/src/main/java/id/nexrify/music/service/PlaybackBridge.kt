@@ -10,6 +10,9 @@ object PlaybackBridge {
     /** True kalau lagu yang sedang diputar ada di favorit. */
     val isFavorite = MutableStateFlow(false)
 
+    /** True saat ViewModel sedang menyiapkan lagu (ganti lagu). Kapsul tidak boleh menghilang di saat ini. */
+    val isLoading = MutableStateFlow(false)
+
     /** Diisi ViewModel. Dipanggil dari notifikasi atau kapsul untuk menyuka atau batal suka lagu aktif. */
     @Volatile
     var onToggleFavorite: (() -> Unit)? = null
