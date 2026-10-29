@@ -208,5 +208,6 @@ object NexIcons {
         )
     }
     val NorthWest by lazy { icon("NorthWest", "M17 17 L7 7", "M7 15 V7 H15") }
+    val Download by lazy { icon("Download", "M12 3.5 V15", "M7.5 10.8 L12 15.3 L16.5 10.8", "M4.5 20 H19.5") }
     val ArrowBack by lazy { icon("ArrowBack", "M20 12 H4", "M10 6 L4 12 L10 18") }
 }
