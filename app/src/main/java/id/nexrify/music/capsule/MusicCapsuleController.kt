@@ -105,6 +105,7 @@ class MusicCapsuleController(
         }
         override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) = refresh()
         override fun onPlaybackStateChanged(playbackState: Int) = refresh()
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = refresh()
         override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) = refresh()
     }
 
@@ -119,8 +120,8 @@ class MusicCapsuleController(
             if (!attached) return
             updateHeart()
             updateProgress()
-            // Kapsul yang dijeda terlalu lama disembunyikan, panel penuh ikut menutup sendiri.
-            if (!player.isPlaying && !expanded && System.currentTimeMillis() - pausedSince > PAUSED_HIDE_MS) {
+            // Musik dijeda atau mati: biarkan refresh menjadwalkan penyembunyian kapsul.
+            if (!player.isPlaying && !player.playWhenReady && !expanded && !PlaybackBridge.isLoading.value) {
                 refresh()
             }
             handler.postDelayed(this, 500L)
@@ -190,14 +191,16 @@ class MusicCapsuleController(
     private fun hasSession(): Boolean =
         player.mediaItemCount > 0 || !player.mediaMetadata.title.isNullOrBlank() || lastTitle != null
 
+    /**
+     * Kapsul hanya ada selama musik benar benar diputar atau sedang disiapkan (ganti lagu).
+     * Begitu musik dijeda atau dimatikan, kapsul menghilang otomatis. Panel penuh yang sedang dibuka
+     * tetap tampil sampai menutup sendiri supaya musik bisa dilanjutkan dari situ.
+     */
     private fun shouldShow(): Boolean {
         if (mustHideNow()) return false
-        // Selama musik diputar (termasuk buffering dan pergantian lagu) kapsul tidak boleh hilang.
         if (player.isPlaying || player.playWhenReady) return true
-        if (player.playbackState == Player.STATE_BUFFERING) return true
-        if (expanded) return true
-        if (!hasSession()) return false
-        return System.currentTimeMillis() - pausedSince <= PAUSED_HIDE_MS
+        if (PlaybackBridge.isLoading.value) return true
+        return expanded
     }
 
     // ---------------------------------------------------------------- window
@@ -716,7 +719,7 @@ class MusicCapsuleController(
         private const val EXPANDED_ART_DP = 58
         private const val AUTO_COLLAPSE_MS = 7_000L
         private const val PAUSED_HIDE_MS = 60_000L
-        private const val HIDE_GRACE_MS = 4_000L
+        private const val HIDE_GRACE_MS = 2_000L
         private const val RETRY_BACKOFF_MS = 8_000L
 
         fun canDrawOverlays(context: Context): Boolean =
