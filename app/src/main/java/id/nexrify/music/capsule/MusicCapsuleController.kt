@@ -230,6 +230,11 @@ class MusicCapsuleController(
             params = lp
             attached = true
             expanded = false
+            // View baru selalu kosong. Pasang lagi sampul terakhir, kalau tidak sampul hilang tiap kapsul
+            // muncul ulang (misalnya setelah keluar dari aplikasi) karena key sampulnya tidak berubah.
+            placeholderShown = false
+            val cached = lastBitmap
+            if (cached != null) artView.setImageBitmap(cached) else showPlaceholder()
             view.alpha = 0f
             view.translationY = -dp(16).toFloat()
             view.animate().alpha(1f).translationY(0f).setDuration(220L).start()
@@ -521,13 +526,19 @@ class MusicCapsuleController(
             while (bitmap == null && attempt < 3 && !destroyed) {
                 var conn: HttpURLConnection? = null
                 try {
-                    conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 8_000
-                        readTimeout = 8_000
-                        instanceFollowRedirects = true
+                    if (url.startsWith("file:") || url.startsWith("/")) {
+                        // Sampul lagu offline tersimpan di file lokal.
+                        val path = android.net.Uri.parse(url).path ?: url
+                        bitmap = decodeSampled(java.io.File(path).readBytes())
+                    } else {
+                        conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 8_000
+                            readTimeout = 8_000
+                            instanceFollowRedirects = true
+                        }
+                        val bytes = conn.inputStream.use { it.readBytes() }
+                        bitmap = decodeSampled(bytes)
                     }
-                    val bytes = conn.inputStream.use { it.readBytes() }
-                    bitmap = decodeSampled(bytes)
                 } catch (_: Exception) {
                 } finally {
                     conn?.disconnect()
