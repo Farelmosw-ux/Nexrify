@@ -10,7 +10,11 @@ import id.nexrify.music.data.auth.AuthManager
 import id.nexrify.music.data.remote.NexrifyDownloader
 import org.schabi.newpipe.extractor.NewPipe
 
-class NexrifyApplication : Application(), ImageLoaderFactory {
+class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle.ViewModelStoreOwner {
+
+    /** ViewModel musik dipegang di level aplikasi: tetap hidup selama pemutaran jalan, walau Activity ditutup. */
+    override val viewModelStore: androidx.lifecycle.ViewModelStore = androidx.lifecycle.ViewModelStore()
+
     override fun onCreate() {
         super.onCreate()
         AuthManager.init(this)
