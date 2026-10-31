@@ -1,5 +1,8 @@
 package id.nexrify.music.ui.components
 
+import id.nexrify.music.data.remote.NexrifyLinks
+import id.nexrify.music.data.update.UpdateManager
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import id.nexrify.music.data.prayer.MaghribManager
@@ -109,7 +112,7 @@ fun SettingsDialog(
 
     var cacheSize by remember { mutableStateOf<String?>(null) }
     var updateState by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
-    var latestReleaseUrl by remember { mutableStateOf("https://github.com/Farelmosw-ux/Nexrify/releases") }
+    var latestReleaseUrl by remember { mutableStateOf(NexrifyLinks.SITE) }
     var updateBusy by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val maghribManager = remember { MaghribManager.getInstance() }
@@ -231,21 +234,8 @@ fun SettingsDialog(
                         if (!updateBusy) scope.launch {
                             updateBusy = true
                             updateState = UpdateState.Checking
-                            val result = withContext(Dispatchers.IO) {
-                                runCatching {
-                                    val client = OkHttpClient.Builder().callTimeout(8, TimeUnit.SECONDS).build()
-                                    val request = Request.Builder()
-                                        .url("https://api.github.com/repos/Farelmosw-ux/Nexrify/releases/latest")
-                                        .header("Accept", "application/vnd.github+json")
-                                        .build()
-                                    client.newCall(request).execute().use { response ->
-                                        if (!response.isSuccessful) error("Server mengembalikan HTTP ${response.code}")
-                                        val json = JSONObject(response.body?.string().orEmpty())
-                                        val tag = json.optString("tag_name").removePrefix("v")
-                                        val url = json.optString("html_url", "https://github.com/Farelmosw-ux/Nexrify/releases")
-                                        tag to url
-                                    }
-                                }
+                            val result = UpdateManager.getInstance().fetchLatest().map { release ->
+                                (release?.version.orEmpty()) to (release?.downloadUrl ?: NexrifyLinks.DOWNLOAD)
                             }
                             updateBusy = false
                             result.onSuccess { (latest, url) ->
@@ -258,7 +248,7 @@ fun SettingsDialog(
                         Text(if (updateBusy) S.checking else S.checkUpdate)
                     }
                     Button(onClick = {
-                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(latestReleaseUrl))) }
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(NexrifyLinks.SITE))) }
                             .onFailure { Toast.makeText(context, currentStrings().cannotOpenUpdate, Toast.LENGTH_SHORT).show() }
                     }, colors = ButtonDefaults.buttonColors(containerColor = colors.card, contentColor = colors.textPrimary), modifier = Modifier.weight(1f)) {
                         Text(S.openReleases)
