@@ -21,6 +21,8 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
         id.nexrify.music.data.prayer.MaghribManager.init(this)
         id.nexrify.music.data.network.NetworkMonitor.init(this)
         id.nexrify.music.data.download.OfflineManager.init(this)
+        id.nexrify.music.data.update.UpdateManager.init(this)
+        id.nexrify.music.data.mailbox.MailboxManager.init(this)
         id.nexrify.music.data.settings.SettingsManager.init(this)
         val downloader = NexrifyDownloader.init(this)
         NewPipe.init(downloader)
