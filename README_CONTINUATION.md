@@ -65,3 +65,12 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - Setelah error pemutaran, ViewModel tidak lagi loncat terus ke lagu streaming: lagu offline yang error tidak diloncati (streaming ulang kalau ada internet, berhenti kalau tidak ada), gagal beruntun 4 kali berhenti, tanpa internet next dan prev hanya memilih lagu yang sudah diunduh, radio otomatis tidak jalan saat offline, memilih lagu yang belum diunduh saat offline menampilkan pesan.
 - data/network/NetworkMonitor.kt memantau koneksi, dan MainActivity menampilkan banner offline yang membuka tab Offline.
 - Kapsul: hanya tampil selama musik diputar atau sedang menyiapkan lagu (PlaybackBridge.isLoading). Musik dijeda atau dimatikan: kapsul hilang otomatis setelah jeda 2 detik, kecuali panel penuh yang sedang dibuka.
+
+## Revisi 3.9.0
+- Kapsul: penyebab kapsul nyangkut ketemu. Tampilan baru belum menempel ke window beberapa frame pertama, pengecekan lama menganggapnya hilang lalu membuang referensinya tanpa melepasnya dari WindowManager, sehingga tampilan yatim tertinggal (muncul di dalam aplikasi, tetap ada saat musik mati, sampul lama). Sekarang semua tampilan dicatat dan dilepas bersama, dengan batas waktu sebelum dianggap hilang.
+- Kapsul: tombol kunci (ketukan tidak membuka aplikasi, teks sesuai bahasa), tombol sembunyikan kapsul, dan tombol kapsul di kontrol media (di samping tombol suka) untuk menampilkannya lagi.
+- Beranda baru: Putar lagi (grid 2 kolom), Pilihan untukmu (banner), Favorit, lalu rak lain. Tombol kotak surat dengan badge.
+- Update: dialog Update tersedia (catatan rilis sesuai bahasa, tombol Nanti dan Update sekarang) lewat https://nexrify.biz.id/api/release. Cek di Pengaturan memakai endpoint yang sama.
+- Kotak surat dari https://nexrify.biz.id/api/mailbox (cache offline, tandai dibaca, hapus lokal).
+- Domain dipusatkan di data/remote/NexrifyApi.kt (NexrifyLinks). Website ada di nexrify-web.zip.
+- Admin web: /nexrapanel. versionCode dan versionName di build.gradle harus sama dengan yang diisi saat rilis di panel.
