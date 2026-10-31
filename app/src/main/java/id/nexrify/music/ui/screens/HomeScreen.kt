@@ -1,5 +1,7 @@
 package id.nexrify.music.ui.screens
 
+import androidx.compose.ui.graphics.Color
+
 import id.nexrify.music.ui.components.NexFooter
 
 import id.nexrify.music.ui.components.NexLoadingFill
@@ -78,6 +80,7 @@ import id.nexrify.music.viewmodel.MusicViewModel
 @Composable
 fun HomeScreen(
     viewModel: MusicViewModel,
+    onOpenMailbox: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val homeSections by viewModel.homeSections.collectAsState()
@@ -149,6 +152,9 @@ fun HomeScreen(
                     Text(S.maghribHomeHint, style = Typography.bodySmall, color = colors.textSecondary)
                 }
             }
+            val unreadMail by id.nexrify.music.data.mailbox.MailboxManager.getInstance().unreadCount.collectAsState()
+            MailboxTopButton(unread = unreadMail, onClick = onOpenMailbox)
+            Spacer(modifier = Modifier.width(10.dp))
             AccountTopButton(account = currentAccount, onClick = { showProfileMenu = true })
         }
 
@@ -224,57 +230,69 @@ fun HomeScreen(
                 items(5) { SkeletonMusicRow() }
             }
         } else if (homeSections.isNotEmpty()) {
-            // YouTube Music Style Shelves (Carousel Rows!)
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                if (recentlyPlayed.isNotEmpty()) {
-                    item(key = "recently_played_header") {
-                        Text(
-                            text = S.recentlyPlayed,
-                            style = Typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = colors.textPrimary,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            // Putar lagi: dari riwayat, atau dari rak pertama kalau riwayat masih kosong.
+            val playAgainSource = remember(recentlyPlayed, homeSections) {
+                (if (recentlyPlayed.isNotEmpty()) recentlyPlayed else homeSections.firstOrNull()?.tracks.orEmpty())
+                    .distinctBy { it.id }
+            }
+            var playAgainExpanded by remember { mutableStateOf(false) }
+            val pickSection = remember(homeSections) { homeSections.firstOrNull { it.tracks.isNotEmpty() } }
+            val pickTrack = pickSection?.tracks?.firstOrNull()
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                if (playAgainSource.isNotEmpty()) {
+                    item(key = "play_again_header") {
+                        HomeSectionHeader(
+                            title = S.playAgain,
+                            action = if (playAgainSource.size > 4) (if (playAgainExpanded) S.showLess else S.viewAll) else null,
+                            onAction = { playAgainExpanded = !playAgainExpanded }
                         )
                     }
-                    item(key = "recently_played_tracks") {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            modifier = Modifier.fillMaxWidth()
+                    item(key = "play_again_grid") {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            itemsIndexed(recentlyPlayed.take(10), key = { index, track -> "recent_${track.id}_$index" }) { _, track ->
-                                YtmMusicCard(
-                                    track = track,
-                                    isPlaying = currentTrack?.id == track.id,
-                                    onClick = { viewModel.playTrack(track, recentlyPlayed) },
-                                    onLongClick = { trackForPlaylist = track }
-                                )
+                            playAgainSource.take(if (playAgainExpanded) 12 else 4).chunked(2).forEach { pair ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                    pair.forEach { track ->
+                                        PlayAgainTile(
+                                            track = track,
+                                            isPlaying = currentTrack?.id == track.id,
+                                            modifier = Modifier.weight(1f),
+                                            onClick = { viewModel.playTrack(track, playAgainSource) },
+                                            onLongClick = { trackForPlaylist = track }
+                                        )
+                                    }
+                                    if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(26.dp))
                     }
                 }
-                if (favorites.isNotEmpty()) {
-                    item(key = "favorites_header") {
-                        Text(
-                            text = S.favoriteSongs,
-                            style = Typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = colors.textPrimary,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+
+                if (pickTrack != null && pickSection != null) {
+                    item(key = "picks_header") { HomeSectionHeader(title = S.picksForYou) }
+                    item(key = "picks_banner") {
+                        PickBanner(
+                            track = pickTrack,
+                            onPlay = { viewModel.playTrack(pickTrack, pickSection.tracks) },
+                            onLongClick = { trackForPlaylist = pickTrack }
                         )
+                        Spacer(modifier = Modifier.height(26.dp))
                     }
+                }
+
+                if (favorites.isNotEmpty()) {
+                    item(key = "favorites_header") { HomeSectionHeader(title = S.favoriteSongs) }
                     item(key = "favorites_tracks") {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(14.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            itemsIndexed(favorites.take(10), key = { index, track -> "favorite_${track.id}_$index" }) { _, track ->
+                            itemsIndexed(favorites.take(12), key = { index, track -> "favorite_${track.id}_$index" }) { _, track ->
                                 YtmMusicCard(
                                     track = track,
                                     isPlaying = currentTrack?.id == track.id,
@@ -283,34 +301,17 @@ fun HomeScreen(
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(26.dp))
                     }
                 }
+
                 homeSections.forEachIndexed { sIndex, section ->
                     item(key = "header_${sIndex}_${section.title}") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = S.sectionTitle(section.title),
-                                style = Typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                                color = colors.textPrimary
-                            )
-                            if (section.subtitle.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = S.sectionSubtitle(section.subtitle),
-                                    style = Typography.bodySmall,
-                                    color = colors.textMuted
-                                )
-                            }
-                        }
+                        HomeSectionHeader(
+                            title = S.sectionTitle(section.title),
+                            subtitle = section.subtitle.takeIf { it.isNotBlank() }?.let { S.sectionSubtitle(it) }
+                        )
                     }
-
                     item(key = "shelf_${sIndex}_${section.title}") {
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -326,7 +327,7 @@ fun HomeScreen(
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(22.dp))
+                        Spacer(modifier = Modifier.height(26.dp))
                     }
                 }
 
@@ -568,6 +569,209 @@ private fun SkeletonMusicRow() {
                     .clip(RoundedCornerShape(4.dp))
                     .background(colors.card.copy(alpha = shimmerAlpha * 0.8f))
             )
+        }
+    }
+}
+
+
+@Composable
+private fun HomeSectionHeader(
+    title: String,
+    subtitle: String? = null,
+    action: String? = null,
+    onAction: () -> Unit = {}
+) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = Typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = colors.textPrimary
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(text = subtitle, style = Typography.bodySmall, color = colors.textMuted)
+            }
+        }
+        if (action != null) {
+            Text(
+                text = action,
+                style = Typography.labelMedium,
+                color = colors.textSecondary,
+                modifier = Modifier.clickable(onClick = onAction).padding(vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PlayAgainTile(
+    track: Track,
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    Row(
+        modifier = modifier
+            .height(58.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.card)
+            .border(1.dp, if (isPlaying) colors.textSecondary else colors.border, RoundedCornerShape(14.dp))
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.size(58.dp)) {
+            AsyncImage(
+                model = track.highResThumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            if (isPlaying) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(PureBlack.copy(alpha = 0.55f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(NexIcons.GraphicEq, S.cd("Playing"), tint = PureWhite, modifier = Modifier.size(22.dp))
+                }
+            }
+        }
+        Text(
+            text = track.title,
+            style = Typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            lineHeight = 17.sp,
+            color = colors.textPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp)
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PickBanner(
+    track: Track,
+    onPlay: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(176.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(colors.card)
+            .combinedClickable(onClick = onPlay, onLongClick = onLongClick)
+    ) {
+        AsyncImage(
+            model = track.highResThumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, PureBlack.copy(alpha = 0.35f), PureBlack.copy(alpha = 0.88f))
+                    )
+                )
+        )
+        Column(
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = 18.dp, bottom = 16.dp, end = 86.dp)
+        ) {
+            Text(
+                text = S.personalMix,
+                style = Typography.labelSmall,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontSize = 10.sp,
+                letterSpacing = 1.4.sp,
+                color = PureWhite.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = track.title,
+                style = Typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 21.sp,
+                color = PureWhite,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = track.artist,
+                style = Typography.bodySmall,
+                color = PureWhite.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 16.dp)
+                .size(54.dp)
+                .clip(CircleShape)
+                .background(PureWhite)
+                .clickable(onClick = onPlay),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_nexrify_play),
+                contentDescription = S.cd("Play"),
+                tint = PureBlack,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MailboxTopButton(unread: Int, onClick: () -> Unit) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(colors.card)
+                .border(1.dp, colors.border, CircleShape)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(NexIcons.Mail, S.mailboxTitle, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
+        }
+        if (unread > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .clip(CircleShape)
+                    .background(colors.accent)
+                    .border(2.dp, colors.background, CircleShape)
+                    .padding(horizontal = 5.dp, vertical = 1.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (unread > 9) "9+" else unread.toString(),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.background
+                )
+            }
         }
     }
 }
