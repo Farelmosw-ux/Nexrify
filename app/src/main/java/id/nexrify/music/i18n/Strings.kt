@@ -56,16 +56,16 @@ class Strings(val english: Boolean) {
     val langId get() = "Indonesia"
     val langEn get() = "English"
     val updateTitle get() = t("Pembaruan Nexrify", "Nexrify updates")
-    val updateDesc get() = t("Cek versi terbaru dari GitHub Releases.", "Check the latest version on GitHub Releases.")
+    val updateDesc get() = t("Cek versi terbaru dari nexrify.biz.id.", "Check the latest version from nexrify.biz.id.")
     val updateNotChecked get() = t("Belum dicek", "Not checked yet")
     val updateChecking get() = t("Lagi ngecek pembaruan…", "Checking for updates…")
     val updateNoRelease get() = t("Versi terbaru belum dirilis.", "No release has been published yet.")
     fun updateLatest(current: String) = t("Nexrify kamu sudah yang terbaru ($current).", "Nexrify is up to date ($current).")
     fun updateAvailable(current: String, latest: String) = t("Ada versi baru: $current ke $latest", "Update available: $current to $latest")
-    val updateFailed get() = t("Gagal ngecek. Coba cek koneksi atau buka halaman Releases.", "Couldn't check. Try your connection or open the Releases page.")
+    val updateFailed get() = t("Gagal ngecek. Coba cek koneksimu atau buka website.", "Couldn't check. Try your connection or open the website.")
     val checkUpdate get() = t("Cek pembaruan", "Check for updates")
     val checking get() = t("Lagi ngecek…", "Checking…")
-    val openReleases get() = t("Buka Releases", "Open Releases")
+    val openReleases get() = t("Buka website", "Open website")
     val cannotOpenUpdate get() = t("Halaman pembaruan nggak bisa dibuka", "Couldn't open the update page")
 
     val audioQualityTitle get() = t("Kualitas audio streaming", "Streaming audio quality")
@@ -104,6 +104,14 @@ class Strings(val english: Boolean) {
         "Kapsul kecil di atas layar saat lagu diputar dan kamu lagi di luar Nexrify. Tekan sekali untuk buka aplikasi, tekan lama untuk kontrol penuh.",
         "A small capsule at the top of the screen while music plays and you're outside Nexrify. Tap to open the app, long press for full controls."
     )
+    val capsuleLockedTap get() = t("Aplikasi terkunci dan tidak bisa dibuka lewat kapsul. Buka kunci dulu untuk membuka aplikasi.", "The app is locked and can't be opened from the capsule. Unlock it first to open the app.")
+    val capsuleLockedOn get() = t("Terkunci. Ketuk kapsul tidak akan membuka aplikasi.", "Locked. Tapping the capsule won't open the app.")
+    val capsuleLockedOff get() = t("Kunci dibuka. Ketuk kapsul akan membuka aplikasi.", "Unlocked. Tapping the capsule opens the app.")
+    val capsuleHiddenToast get() = t("Kapsul disembunyikan. Nyalakan lagi lewat tombol kapsul di kontrol media atau di Pengaturan.", "Capsule hidden. Turn it back on from the capsule button in media controls or in Settings.")
+    val capsuleHideAction get() = t("Sembunyikan kapsul", "Hide capsule")
+    val capsuleShowAction get() = t("Tampilkan kapsul", "Show capsule")
+    val capsuleLockAction get() = t("Kunci kapsul", "Lock capsule")
+    val capsuleUnlockAction get() = t("Buka kunci kapsul", "Unlock capsule")
     val capsulePermission get() = t("Butuh izin tampil di atas aplikasi lain", "Needs permission to display over other apps")
     val capsuleGrant get() = t("Kasih izin", "Grant permission")
     val capsulePermissionHint get() = t("Izin ini cuma dipakai buat nampilin kapsul.", "This permission is only used to show the capsule.")
@@ -266,6 +274,37 @@ class Strings(val english: Boolean) {
 
     val likeAction get() = t("Suka", "Like")
     val unlikeAction get() = t("Batal suka", "Unlike")
+
+    // Update
+    val updateDialogTitle get() = t("Update tersedia", "Update available")
+    val updateWhatsNew get() = t("Yang baru:", "What's new:")
+    val updateNoNotes get() = t("Perbaikan dan peningkatan performa.", "Fixes and performance improvements.")
+    val updateLater get() = t("Nanti", "Later")
+    val updateNow get() = t("Update sekarang", "Update now")
+
+    // Kotak surat
+    val mailboxTitle get() = t("Kotak surat", "Mailbox")
+    val mailboxSubtitle get() = t("Kabar resmi dari Nexrify", "Official news from Nexrify")
+    val mailboxMarkAll get() = t("Tandai dibaca", "Mark all read")
+    val mailboxEmpty get() = t("Belum ada surat", "No messages yet")
+    val mailboxEmptyHint get() = t("Info, update, dan kabar penting dari Nexrify akan muncul di sini.", "Info, updates, and important news from Nexrify will show up here.")
+    val mailboxFailed get() = t("Kotak surat belum bisa dimuat", "Couldn't load the mailbox")
+    val mailboxFailedHint get() = t("Periksa koneksi internetmu lalu buka lagi halaman ini.", "Check your connection and open this page again.")
+    val mailboxPinned get() = t("DISEMATKAN", "PINNED")
+    val mailboxOpenLink get() = t("Buka tautan", "Open link")
+    fun mailType(type: String) = when (type) {
+        "update" -> t("UPDATE", "UPDATE")
+        "promo" -> t("PROMO", "PROMO")
+        "alert" -> t("PENTING", "IMPORTANT")
+        else -> t("INFO", "INFO")
+    }
+
+    // Beranda baru
+    val playAgain get() = t("Putar lagi", "Play again")
+    val picksForYou get() = t("Pilihan untukmu", "Picks for you")
+    val personalMix get() = t("MIX PRIBADI", "PERSONAL MIX")
+    val viewAll get() = t("Lihat semua", "View all")
+    val showLess get() = t("Ciutkan", "Show less")
 
     // Mode offline
     val offlineNotDownloaded get() = t("Lagu ini belum diunduh dan kamu lagi offline", "This song isn't downloaded and you're offline")
