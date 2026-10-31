@@ -66,6 +66,16 @@ class SettingsManager private constructor(private val context: Context) {
         capsuleListener?.invoke()
     }
 
+    private val _capsuleLocked = MutableStateFlow(prefs.getBoolean(KEY_CAPSULE_LOCKED, false))
+    val capsuleLocked: StateFlow<Boolean> = _capsuleLocked.asStateFlow()
+
+    fun isCapsuleLocked(): Boolean = _capsuleLocked.value
+
+    fun setCapsuleLocked(locked: Boolean) {
+        _capsuleLocked.value = locked
+        prefs.edit().putBoolean(KEY_CAPSULE_LOCKED, locked).apply()
+    }
+
     fun setCapsuleChangeListener(listener: (() -> Unit)?) {
         capsuleListener = listener
     }
@@ -199,6 +209,7 @@ class SettingsManager private constructor(private val context: Context) {
         private const val KEY_AUTO_TRANSLATE = "lyrics_auto_translate"
         private const val KEY_LANGUAGE = "app_language"
         private const val KEY_CAPSULE = "music_capsule_enabled"
+        private const val KEY_CAPSULE_LOCKED = "music_capsule_locked"
 
         @Volatile
         private var instance: SettingsManager? = null
