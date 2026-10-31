@@ -1,5 +1,7 @@
 package id.nexrify.music.ui.components
 
+import androidx.compose.foundation.clickable
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -68,6 +70,21 @@ fun NexFooter(
             color = colors.textMuted,
             style = Typography.bodySmall,
             textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "nexrify.biz.id",
+            color = colors.textSecondary,
+            style = Typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.clickable {
+                runCatching {
+                    context.startActivity(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(id.nexrify.music.data.remote.NexrifyLinks.SITE))
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+            }
         )
         Spacer(Modifier.height(14.dp))
         Box(
