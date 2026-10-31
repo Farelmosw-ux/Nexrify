@@ -1,5 +1,17 @@
 package id.nexrify.music
 
+import id.nexrify.music.ui.screens.MailboxScreen
+
+import id.nexrify.music.ui.components.UpdateDialog
+
+import id.nexrify.music.data.mailbox.MailboxManager
+
+import id.nexrify.music.data.update.UpdateManager
+
+import android.net.Uri
+
+import android.content.Intent
+
 import androidx.compose.foundation.clickable
 
 import androidx.compose.foundation.layout.Row
@@ -116,6 +128,15 @@ class MainActivity : ComponentActivity() {
             val strings = remember(language) { Strings(viewModel.settingsManager.isEnglish()) }
             val initialLoadDone by viewModel.initialLoadDone.collectAsState()
 
+            val appContext = androidx.compose.ui.platform.LocalContext.current
+            val updateManager = remember { UpdateManager.getInstance() }
+            val availableUpdate by updateManager.available.collectAsState()
+            LaunchedEffect(Unit) {
+                // Deteksi rilis baru dan ambil kotak surat lewat website Nexrify.
+                updateManager.checkOnLaunch()
+                MailboxManager.getInstance().refresh()
+            }
+
             var showLaunch by remember { mutableStateOf(true) }
             val loadProgress = rememberEstimatedProgress(active = !initialLoadDone)
             LaunchedEffect(initialLoadDone) {
@@ -133,6 +154,21 @@ class MainActivity : ComponentActivity() {
                 NexrifyTheme(themeMode = themeMode) {
                     Box(Modifier.fillMaxSize()) {
                         MainAppScreen(viewModel = viewModel)
+                        availableUpdate?.let { release ->
+                            UpdateDialog(
+                                release = release,
+                                onLater = { updateManager.later(release) },
+                                onUpdate = {
+                                    runCatching {
+                                        appContext.startActivity(
+                                            Intent(Intent.ACTION_VIEW, Uri.parse(release.downloadUrl))
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        )
+                                    }
+                                    if (!release.mandatory) updateManager.dismissWithoutSnooze()
+                                }
+                            )
+                        }
                         AnimatedVisibility(
                             visible = showLaunch,
                             enter = fadeIn(tween(120)),
@@ -194,7 +230,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
         Scaffold(
             containerColor = colors.background,
             bottomBar = {
-                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true) NavigationBar(
+                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox") NavigationBar(
                     containerColor = colors.background,
                     tonalElevation = 0.dp
                 ) {
@@ -274,7 +310,13 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                     modifier = Modifier.weight(1f).fillMaxWidth()
                 ) {
                     composable(Screen.Home.route) {
-                        HomeScreen(viewModel = viewModel)
+                        HomeScreen(
+                            viewModel = viewModel,
+                            onOpenMailbox = { navController.navigate("mailbox") }
+                        )
+                    }
+                    composable("mailbox") {
+                        MailboxScreen(onBack = { navController.popBackStack() })
                     }
                     composable(Screen.Search.route) {
                         SearchScreen(onOpenSearchPage = { q -> navController.navigate(Screen.SearchPage.route(q)) })
