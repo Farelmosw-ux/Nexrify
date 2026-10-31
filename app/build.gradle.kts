@@ -13,8 +13,8 @@ android {
         applicationId = "id.nexrify.music"
         minSdk = 26
         targetSdk = 34
-        versionCode = 30
-        versionName = "3.8.1"
+        versionCode = 31
+        versionName = "3.9.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
