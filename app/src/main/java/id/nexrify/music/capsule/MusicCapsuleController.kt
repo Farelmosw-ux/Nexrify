@@ -1,5 +1,11 @@
 package id.nexrify.music.capsule
 
+import id.nexrify.music.i18n.currentStrings
+
+import android.widget.Toast
+
+import android.os.SystemClock
+
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -67,6 +73,10 @@ class MusicCapsuleController(
     private var attached = false
     private var destroyed = false
     private var pausedSince = 0L
+    private val liveViews = mutableListOf<View>()
+    private var attachedAt = 0L
+    private lateinit var lockButton: ImageView
+    private lateinit var lockBadge: ImageView
 
     // Views
     private lateinit var background: GradientDrawable
@@ -112,12 +122,16 @@ class MusicCapsuleController(
     private val ticker = object : Runnable {
         override fun run() {
             if (destroyed) return
-            if (attached && root?.isAttachedToWindow == false) {
+            if (!attached) return
+            val view = root
+            // Tampilan baru belum menempel ke window selama beberapa frame pertama. Itu normal, jangan dianggap hilang.
+            // Baru dianggap hilang kalau sudah lewat batas waktu.
+            if (view != null && !view.isAttachedToWindow &&
+                SystemClock.uptimeMillis() - attachedAt > STALE_AFTER_MS
+            ) {
                 refresh()
-                if (!attached) handler.postDelayed(this, 1_000L)
                 return
             }
-            if (!attached) return
             updateHeart()
             updateProgress()
             // Musik dijeda atau mati: biarkan refresh menjadwalkan penyembunyian kapsul.
@@ -152,8 +166,13 @@ class MusicCapsuleController(
     /** Dipanggil ulang kapan pun kondisi berubah (lagu, status putar, aplikasi tampil/tidak, izin, pengaturan). */
     fun refresh() {
         if (destroyed) return
-        // Kalau tampilan sempat dilepas sistem, anggap belum terpasang supaya dipasang ulang.
-        if (attached && root?.isAttachedToWindow == false) {
+        // Kalau tampilan benar benar dilepas sistem, buang semua sisa tampilan lalu pasang ulang.
+        // Sisa tampilan yang tidak dibuang inilah yang dulu membuat kapsul nyangkut dan tidak bisa hilang.
+        val current = root
+        if (attached && current != null && !current.isAttachedToWindow &&
+            SystemClock.uptimeMillis() - attachedAt > STALE_AFTER_MS
+        ) {
+            removeAllViews()
             root = null
             params = null
             attached = false
@@ -229,6 +248,8 @@ class MusicCapsuleController(
         }
         try {
             windowManager.addView(view, lp)
+            liveViews.add(view)
+            attachedAt = SystemClock.uptimeMillis()
             root = view
             params = lp
             attached = true
@@ -238,6 +259,7 @@ class MusicCapsuleController(
             placeholderShown = false
             val cached = lastBitmap
             if (cached != null) artView.setImageBitmap(cached) else showPlaceholder()
+            updateLock()
             view.alpha = 0f
             view.translationY = -dp(16).toFloat()
             view.animate().alpha(1f).translationY(0f).setDuration(220L).start()
@@ -254,17 +276,32 @@ class MusicCapsuleController(
     private fun detach() {
         handler.removeCallbacks(ticker)
         handler.removeCallbacks(autoCollapse)
-        val view = root
-        if (view != null && attached) {
-            try {
-                windowManager.removeViewImmediate(view)
-            } catch (_: Exception) {
-            }
-        }
+        removeAllViews()
         root = null
         params = null
         attached = false
         expanded = false
+    }
+
+    /** Buang semua tampilan kapsul yang pernah dipasang, bukan hanya yang terakhir. */
+    private fun removeAllViews() {
+        val toRemove = liveViews.toList()
+        liveViews.clear()
+        toRemove.forEach { v ->
+            try {
+                v.animate().cancel()
+                windowManager.removeViewImmediate(v)
+            } catch (_: Exception) {
+            }
+        }
+        root?.let { r ->
+            if (r !in toRemove) {
+                try {
+                    windowManager.removeViewImmediate(r)
+                } catch (_: Exception) {
+                }
+            }
+        }
     }
 
     // ---------------------------------------------------------------- view construction
@@ -332,6 +369,12 @@ class MusicCapsuleController(
         // Spacer fleksibel supaya gelombang selalu di kanan saat kapsul.
         val spacer = View(context)
         headerRow.addView(spacer, LinearLayout.LayoutParams(0, 1, 1f))
+        lockBadge = ImageView(context).apply {
+            setImageResource(R.drawable.ic_lock_closed)
+            setColorFilter(0xB3FFFFFF.toInt())
+            visibility = View.GONE
+        }
+        headerRow.addView(lockBadge, LinearLayout.LayoutParams(dp(14), dp(14)).apply { marginEnd = dp(8) })
         waveform = WaveformView(context)
         headerRow.addView(waveform, LinearLayout.LayoutParams(dp(26), dp(18)).apply { marginEnd = dp(9) })
         content.addView(headerRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -390,18 +433,34 @@ class MusicCapsuleController(
             handler.postDelayed({ updateHeart() }, 150L)
             scheduleAutoCollapse()
         }
+        lockButton = controlButton(R.drawable.ic_lock_open) {
+            val settings = SettingsManager.getInstance()
+            val nowLocked = !settings.isCapsuleLocked()
+            settings.setCapsuleLocked(nowLocked)
+            updateLock()
+            val strings = currentStrings()
+            Toast.makeText(context, if (nowLocked) strings.capsuleLockedOn else strings.capsuleLockedOff, Toast.LENGTH_SHORT).show()
+            scheduleAutoCollapse()
+        }
+        val hideButton = controlButton(R.drawable.ic_capsule_off) {
+            // Sembunyikan kapsul walau lagu masih diputar. Nyalakan lagi lewat tombol kapsul di kontrol media atau Pengaturan.
+            Toast.makeText(context, currentStrings().capsuleHiddenToast, Toast.LENGTH_LONG).show()
+            SettingsManager.getInstance().setCapsuleEnabled(false)
+        }
         val prev = controlButton(R.drawable.ic_nexrify_rewind) { player.seekToPrevious(); scheduleAutoCollapse() }
         playPauseView = controlButton(R.drawable.ic_nexrify_pause) {
             if (player.isPlaying) player.pause() else player.play()
             scheduleAutoCollapse()
         }
         val next = controlButton(R.drawable.ic_nexrify_fast_forward) { player.seekToNext(); scheduleAutoCollapse() }
-        controls.addView(heartView, LinearLayout.LayoutParams(dp(52), dp(48)))
-        controls.addView(prev, LinearLayout.LayoutParams(dp(64), dp(48)))
-        controls.addView(playPauseView, LinearLayout.LayoutParams(dp(72), dp(48)))
-        controls.addView(next, LinearLayout.LayoutParams(dp(64), dp(48)))
+        controls.addView(heartView, LinearLayout.LayoutParams(dp(44), dp(48)))
+        controls.addView(lockButton, LinearLayout.LayoutParams(dp(44), dp(48)))
+        controls.addView(prev, LinearLayout.LayoutParams(dp(56), dp(48)))
+        controls.addView(playPauseView, LinearLayout.LayoutParams(dp(64), dp(48)))
+        controls.addView(next, LinearLayout.LayoutParams(dp(56), dp(48)))
         // Penyeimbang di kanan supaya tombol putar tetap di tengah.
-        controls.addView(View(context), LinearLayout.LayoutParams(dp(52), dp(48)))
+        controls.addView(View(context), LinearLayout.LayoutParams(dp(44), dp(48)))
+        controls.addView(hideButton, LinearLayout.LayoutParams(dp(44), dp(48)))
         expandedGroup.addView(controls, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) })
         content.addView(expandedGroup, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
@@ -410,7 +469,12 @@ class MusicCapsuleController(
             override fun onDown(e: MotionEvent): Boolean = true
 
             override fun onSingleTapUp(e: MotionEvent): Boolean {
-                openApp()
+                if (SettingsManager.getInstance().isCapsuleLocked()) {
+                    // Terkunci: ketukan tidak membuka aplikasi (misalnya tidak sengaja kepencet saat main game).
+                    Toast.makeText(context, currentStrings().capsuleLockedTap, Toast.LENGTH_SHORT).show()
+                } else {
+                    openApp()
+                }
                 return true
             }
 
@@ -483,6 +547,7 @@ class MusicCapsuleController(
         )
         bindArtwork(md, itemMd)
         updateHeart()
+        updateLock()
         updateProgress()
         view.requestLayout()
     }
@@ -605,6 +670,13 @@ class MusicCapsuleController(
         }
     }
 
+    private fun updateLock() {
+        if (!attached) return
+        val locked = SettingsManager.getInstance().isCapsuleLocked()
+        lockButton.setImageResource(if (locked) R.drawable.ic_lock_closed else R.drawable.ic_lock_open)
+        lockBadge.visibility = if (locked && !expanded) View.VISIBLE else View.GONE
+    }
+
     private fun updateHeart() {
         if (!attached) return
         heartView.setImageResource(
@@ -720,6 +792,7 @@ class MusicCapsuleController(
         private const val AUTO_COLLAPSE_MS = 7_000L
         private const val PAUSED_HIDE_MS = 60_000L
         private const val HIDE_GRACE_MS = 2_000L
+        private const val STALE_AFTER_MS = 2_500L
         private const val RETRY_BACKOFF_MS = 8_000L
 
         fun canDrawOverlays(context: Context): Boolean =
