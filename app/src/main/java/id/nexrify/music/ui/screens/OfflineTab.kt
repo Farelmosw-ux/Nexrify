@@ -1,5 +1,7 @@
 package id.nexrify.music.ui.screens
 
+import id.nexrify.music.ui.components.NexConfirmDialog
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,7 +60,7 @@ fun OfflineTab(viewModel: MusicViewModel) {
     val downloads by viewModel.downloads.collectAsState()
     val currentTrack by viewModel.currentTrack.collectAsState()
     val isLoadingTrack by viewModel.isLoadingTrack.collectAsState()
-    val account by AuthManager.getInstance().authState.collectAsState()
+    val account by id.nexrify.music.data.account.AccountManager.getInstance().user.collectAsState()
     var confirmDeleteAll by remember { mutableStateOf(false) }
 
     val tracks = offlineTracks.sortedByDescending { it.downloadedAt }
@@ -152,19 +154,16 @@ fun OfflineTab(viewModel: MusicViewModel) {
     }
 
     if (confirmDeleteAll) {
-        AlertDialog(
-            onDismissRequest = { confirmDeleteAll = false },
-            containerColor = colors.surface,
-            title = { Text(S.offlineDeleteAllTitle, color = colors.textPrimary, style = Typography.titleLarge) },
-            text = { Text(S.offlineDeleteAllBody, color = colors.textMuted, style = Typography.bodyMedium) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteAllOffline()
-                    confirmDeleteAll = false
-                }) { Text(S.delete, color = colors.textPrimary, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDeleteAll = false }) { Text(S.cancel, color = colors.textMuted) }
+        NexConfirmDialog(
+            title = S.offlineDeleteAllTitle,
+            text = S.offlineDeleteAllBody,
+            confirmText = S.delete,
+            icon = NexIcons.DeleteOutline,
+            danger = true,
+            onDismiss = { confirmDeleteAll = false },
+            onConfirm = {
+                viewModel.deleteAllOffline()
+                confirmDeleteAll = false
             }
         )
     }
