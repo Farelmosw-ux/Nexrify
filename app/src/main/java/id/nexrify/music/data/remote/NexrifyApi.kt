@@ -55,11 +55,12 @@ object NexrifyApi {
         HttpClientProvider.client.newBuilder().callTimeout(12, TimeUnit.SECONDS).build()
     }
 
-    private fun getJson(url: String): JSONObject {
+    private fun getJson(url: String, token: String? = null): JSONObject {
         val request = Request.Builder()
             .url(url)
             .header("Accept", "application/json")
             .header("User-Agent", "Nexrify-Android")
+            .apply { if (!token.isNullOrBlank()) header("Authorization", "Bearer $token") }
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
@@ -85,7 +86,7 @@ object NexrifyApi {
     }
 
     suspend fun fetchMailbox(): List<MailMessage> = withContext(Dispatchers.IO) {
-        val json = getJson(NexrifyLinks.API_MAILBOX)
+        val json = getJson(NexrifyLinks.API_MAILBOX, id.nexrify.music.data.account.AccountManager.getInstance().token())
         val arr = json.optJSONArray("messages") ?: return@withContext emptyList()
         buildList {
             for (i in 0 until arr.length()) {
