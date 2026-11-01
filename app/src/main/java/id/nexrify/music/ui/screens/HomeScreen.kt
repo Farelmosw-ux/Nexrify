@@ -396,41 +396,12 @@ fun AccountTopButton(
     account: UserAccount?,
     onClick: () -> Unit
 ) {
-    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
-
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(colors.card)
-            .border(1.dp, if (account != null) colors.textPrimary else colors.border, CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (account != null && account.avatarUrl.isNotBlank()) {
-            AsyncImage(
-                model = account.avatarUrl,
-                contentDescription = S.cd("Account Profile"),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-            )
-        } else if (account != null) {
-            Text(
-                text = account.name.take(1).uppercase().ifBlank { "G" },
-                style = Typography.titleMedium,
-                color = colors.textPrimary
-            )
-        } else {
-            Icon(
-                imageVector = NexIcons.AccountCircle,
-                contentDescription = S.cd("Login YouTube"),
-                tint = colors.textSecondary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
+    val nexUser by id.nexrify.music.data.account.AccountManager.getInstance().user.collectAsState()
+    id.nexrify.music.ui.components.NexAvatar(
+        user = nexUser,
+        size = 40.dp,
+        modifier = Modifier.clickable(onClick = onClick)
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
