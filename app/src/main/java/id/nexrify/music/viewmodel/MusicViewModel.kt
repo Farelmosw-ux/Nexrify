@@ -369,7 +369,18 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _currentTrack.value?.let { toggleFavorite(it) }
     }
 
+    /** Muat ulang data dari penyimpanan setelah data akun diterapkan atau dihapus. */
+    fun reloadFromStorage() {
+        _favorites.value = loadStoredFavorites()
+        tasteManager.reload()
+        playlistManager.reload()
+        searchHistoryManager.reload()
+        settingsManager.reloadFromPrefs()
+        id.nexrify.music.data.mailbox.MailboxManager.getInstance().reload()
+    }
+
     init {
+        id.nexrify.music.data.account.AccountSync.getInstance().addReloadHook { reloadFromStorage() }
         PlaybackBridge.onToggleFavorite = { toggleCurrentFavorite() }
         viewModelScope.launch { _isLoadingTrack.collect { PlaybackBridge.isLoading.value = it } }
         viewModelScope.launch {
