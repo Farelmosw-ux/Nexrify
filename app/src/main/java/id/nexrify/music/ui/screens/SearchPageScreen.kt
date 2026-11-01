@@ -1,5 +1,7 @@
 package id.nexrify.music.ui.screens
 
+import id.nexrify.music.ui.components.NexConfirmDialog
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -275,19 +277,16 @@ fun SearchPageScreen(
     }
 
     if (confirmClear) {
-        AlertDialog(
-            onDismissRequest = { confirmClear = false },
-            containerColor = colors.surface,
-            title = { Text(S.clearHistoryTitle, color = colors.textPrimary, style = Typography.titleLarge) },
-            text = { Text(S.clearHistoryBody, color = colors.textMuted, style = Typography.bodyMedium) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.clearSearchHistory()
-                    confirmClear = false
-                }) { Text(S.delete, color = colors.textPrimary, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmClear = false }) { Text(S.cancel, color = colors.textMuted) }
+        NexConfirmDialog(
+            title = S.clearHistoryTitle,
+            text = S.clearHistoryBody,
+            confirmText = S.delete,
+            icon = NexIcons.DeleteOutline,
+            danger = true,
+            onDismiss = { confirmClear = false },
+            onConfirm = {
+                viewModel.clearSearchHistory()
+                confirmClear = false
             }
         )
     }
