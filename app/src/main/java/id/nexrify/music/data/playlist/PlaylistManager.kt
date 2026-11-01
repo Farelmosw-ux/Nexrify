@@ -27,6 +27,8 @@ class PlaylistManager private constructor(context: Context) {
         loadPlaylists()
     }
 
+    fun reload() = loadPlaylists()
+
     private fun loadPlaylists() {
         val raw = prefs.getString(KEY_PLAYLISTS, "[]") ?: "[]"
         try {
