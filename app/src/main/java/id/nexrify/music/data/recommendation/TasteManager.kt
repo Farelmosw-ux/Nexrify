@@ -153,6 +153,13 @@ class TasteManager private constructor(context: Context) {
             .apply()
     }
 
+    /** Muat ulang dari penyimpanan setelah data akun diterapkan atau dihapus. */
+    @Synchronized
+    fun reload() {
+        scoresMap.clear(); playsMap.clear(); trackDataMap.clear()
+        loadDataFromPrefs()
+    }
+
     private fun loadDataFromPrefs() {
         try {
             // 1. Load recents
