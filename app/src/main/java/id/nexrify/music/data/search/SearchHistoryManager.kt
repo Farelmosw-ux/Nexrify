@@ -36,6 +36,8 @@ class SearchHistoryManager(context: Context) {
         prefs.edit().remove(KEY).apply()
     }
 
+    fun reload() { _history.value = load() }
+
     private fun load(): List<String> {
         val raw = prefs.getString(KEY, null) ?: return emptyList()
         return runCatching {
