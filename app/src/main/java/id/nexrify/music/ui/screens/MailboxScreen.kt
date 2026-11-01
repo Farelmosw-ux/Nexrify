@@ -58,6 +58,7 @@ fun MailboxScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val readIds by mailbox.readIds.collectAsState()
     val loading by mailbox.loading.collectAsState()
     val failed by mailbox.failed.collectAsState()
+    val errorDetail by mailbox.errorDetail.collectAsState()
     var expandedId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
@@ -108,6 +109,10 @@ fun MailboxScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         if (failed) S.mailboxFailedHint else S.mailboxEmptyHint,
                         style = Typography.bodySmall, color = colors.textMuted, textAlign = TextAlign.Center
                     )
+                    if (failed && errorDetail.isNotBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(S.mailboxFailedDetail(errorDetail), style = Typography.labelSmall, fontSize = 11.sp, color = colors.textMuted, textAlign = TextAlign.Center)
+                    }
                 }
             }
             else -> LazyColumn(
