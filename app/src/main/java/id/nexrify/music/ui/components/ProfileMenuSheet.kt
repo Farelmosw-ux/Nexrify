@@ -1,5 +1,13 @@
 package id.nexrify.music.ui.components
 
+import kotlinx.coroutines.launch
+
+import androidx.compose.runtime.rememberCoroutineScope
+
+import id.nexrify.music.data.account.AccountSync
+
+import id.nexrify.music.data.account.AccountManager
+
 import id.nexrify.music.i18n.S
 
 import id.nexrify.music.ui.icons.NexIcons
@@ -90,63 +98,29 @@ fun ProfileMenuSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 36.dp)
         ) {
-            // Profile & Account Card (Spotify-Style Upper Section)
+            // Kartu akun Nexrify: nama, foto, edit profil, keluar
+            val nexUser by AccountManager.getInstance().user.collectAsState()
+            var showEdit by remember { mutableStateOf(false) }
+            var showLogoutConfirm by remember { mutableStateOf(false) }
+            val accountScope = rememberCoroutineScope()
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(colors.card)
-                    .border(1.dp, colors.border, RoundedCornerShape(16.dp))
+                    .border(1.dp, colors.border, RoundedCornerShape(20.dp))
                     .padding(16.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (account == null) {
-                                onLoginClick()
-                                onDismiss()
-                            }
-                        },
+                    modifier = Modifier.fillMaxWidth().clickable { showEdit = true },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (account?.avatarUrl != null && account.avatarUrl.isNotBlank()) {
-                        AsyncImage(
-                            model = account.avatarUrl,
-                            contentDescription = account.name,
-                            modifier = Modifier
-                                .size(54.dp)
-                                .clip(CircleShape)
-                                .border(1.5.dp, colors.accent, CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(54.dp)
-                                .clip(CircleShape)
-                                .background(colors.border),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = NexIcons.AccountCircle,
-                                contentDescription = null,
-                                tint = colors.textPrimary,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
-
+                    NexAvatar(nexUser, 58.dp)
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = account?.let { acc ->
-                                acc.name.takeIf { it.isNotBlank() && !it.equals("Nexrify User", true) && !it.equals("YouTube User", true) }
-                                    ?: acc.channelHandle.takeIf { it.isNotBlank() }
-                                    ?: acc.email.substringBefore('@').takeIf { it.isNotBlank() }
-                                    ?: S.googleUser
-                            } ?: S.musicLover,
+                            text = nexUser?.display ?: S.musicLover,
                             style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = colors.textPrimary,
                             maxLines = 1,
@@ -154,84 +128,85 @@ fun ProfileMenuSheet(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = if (account != null) (account.email.ifBlank { S.googleConnected }) else S.tapToLogin,
+                            text = "@" + (nexUser?.username ?: ""),
                             style = Typography.bodyMedium,
                             color = colors.textMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Text(S.editProfile, style = Typography.labelMedium, color = colors.textSecondary)
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
                 HorizontalDivider(color = colors.border, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Action Row (Add Account / Switch / Logout)
-                if (account != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onLogoutClick()
-                                onDismiss()
-                            },
-                        verticalAlignment = Alignment.CenterVertically
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { showLogoutConfirm = true },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier.size(30.dp).clip(CircleShape).background(colors.border),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(CircleShape)
-                                .background(colors.border),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = NexIcons.Logout,
-                                contentDescription = S.cd("Logout"),
-                                tint = colors.textPrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = S.switchAccount,
-                            style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                            color = colors.textPrimary
-                        )
+                        Icon(NexIcons.Logout, S.cd("Logout"), tint = colors.textPrimary, modifier = Modifier.size(16.dp))
                     }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onLoginClick()
-                                onDismiss()
-                            },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(CircleShape)
-                                .background(colors.accent),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = NexIcons.Add,
-                                contentDescription = S.cd("Add"),
-                                tint = colors.background,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = S.connectGoogle,
-                            style = Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = colors.textPrimary
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(S.logoutAccount, style = Typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = colors.textPrimary)
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // YouTube Music tetap bisa dihubungkan, tapi hanya opsional dan bukan identitas akun
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colors.card)
+                    .border(1.dp, colors.border, RoundedCornerShape(16.dp))
+                    .clickable {
+                        if (account == null) onLoginClick() else onLogoutClick()
+                        onDismiss()
+                    }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(S.youtubeOptional, style = Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = colors.textPrimary)
+                    Text(
+                        text = if (account == null) S.youtubeConnectHint else (account.email.ifBlank { account.name }),
+                        style = Typography.bodySmall, color = colors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Text(
+                    text = if (account == null) S.authLogin else S.youtubeDisconnect,
+                    style = Typography.labelMedium, color = colors.textSecondary
+                )
+            }
+
+            if (showEdit) EditProfileDialog(onDismiss = { showEdit = false })
+            if (showLogoutConfirm) {
+                NexConfirmDialog(
+                    title = S.logoutTitle,
+                    text = S.logoutBody,
+                    confirmText = S.logoutAccount,
+                    icon = NexIcons.Logout,
+                    danger = true,
+                    onDismiss = { showLogoutConfirm = false },
+                    onConfirm = {
+                        showLogoutConfirm = false
+                        accountScope.launch {
+                            AccountSync.getInstance().flush()
+                            AccountSync.getInstance().wipeLocal()
+                            AccountManager.getInstance().clearLocal()
+                            onDismiss()
+                        }
+                    }
+                )
+            }
+
 
             Spacer(modifier = Modifier.height(24.dp))
 
