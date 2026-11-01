@@ -74,3 +74,11 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - Kotak surat dari https://nexrify.biz.id/api/mailbox (cache offline, tandai dibaca, hapus lokal).
 - Domain dipusatkan di data/remote/NexrifyApi.kt (NexrifyLinks). Website ada di nexrify-web.zip.
 - Admin web: /nexrapanel. versionCode dan versionName di build.gradle harus sama dengan yang diisi saat rilis di panel.
+
+## Revisi 4.0.0: akun Nexrify wajib, sinkron data, kotak surat diperbaiki
+- Login/daftar buatan sendiri (data/account/): AccountApi, AccountManager, AccountSync dan layar AuthScreen yang wajib dilewati sebelum aplikasi. Akun di server nexrify.biz.id (/api/auth, /api/user), bukan login YouTube. YouTube Music tetap bisa dihubungkan sebagai opsi di menu profil.
+- Sinkron: AccountSync memantau SharedPreferences favorit, playlist, selera/riwayat, riwayat pencarian, pengaturan, dan status kotak surat, lalu mengirim ke server dengan jeda. Saat login data akun menggantikan data lokal. Akun baru memindahkan data lokal ke akun. Keluar akun menghapus data lokal (unduhan offline tetap, terikat id akun).
+- Profil: nama dan foto dari akun Nexrify (NexAvatar, EditProfileDialog), ganti password, keluar akun dengan konfirmasi.
+- Kotak surat: kirim token supaya surat khusus per pengguna sampai, coba ulang otomatis, detail error ditampilkan di layar kalau gagal, polling tiap 10 menit dan notifikasi surat baru.
+- Dialog: NexDialogCard dan NexConfirmDialog menggantikan AlertDialog polos untuk konfirmasi, bentuk dialog lain diseragamkan.
+- Website: panel dibuat ulang tanpa pop-up bawaan browser (dialog, pemilih tanggal, pilihan, dan unggah file buatan sendiri), tab Pengguna, surat bisa ditujukan ke satu pengguna.
