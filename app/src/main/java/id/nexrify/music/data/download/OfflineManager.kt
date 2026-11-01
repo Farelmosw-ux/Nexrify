@@ -1,5 +1,7 @@
 package id.nexrify.music.data.download
 
+import id.nexrify.music.data.account.AccountManager
+
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
@@ -61,7 +63,7 @@ class OfflineManager private constructor(private val context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val repository = MusicRepository()
 
-    private var accountKey: String = keyFor(AuthManager.getInstance().authState.value)
+    private var accountKey: String = keyFor(AccountManager.getInstance().userId())
 
     private val _tracks = MutableStateFlow<List<OfflineTrack>>(emptyList())
     val offlineTracks: StateFlow<List<OfflineTrack>> = _tracks.asStateFlow()
@@ -78,8 +80,8 @@ class OfflineManager private constructor(private val context: Context) {
     init {
         reload()
         scope.launch {
-            AuthManager.getInstance().authState.collect { account ->
-                val key = keyFor(account)
+            AccountManager.getInstance().user.collect { account ->
+                val key = keyFor(account?.id)
                 if (key != accountKey) {
                     cancelEverything()
                     accountKey = key
@@ -369,11 +371,9 @@ class OfflineManager private constructor(private val context: Context) {
             instance ?: throw IllegalStateException("OfflineManager belum di inisialisasi")
 
         /** Kunci folder per akun. Tidak memakai email mentah sebagai nama folder. */
-        fun keyFor(account: UserAccount?): String {
-            if (account == null) return "guest"
-            val raw = account.email.lowercase().ifBlank { account.name.lowercase() }
-            if (raw.isBlank()) return "account"
-            val digest = MessageDigest.getInstance("SHA-256").digest(raw.toByteArray())
+        fun keyFor(accountId: String?): String {
+            if (accountId.isNullOrBlank()) return "guest"
+            val digest = MessageDigest.getInstance("SHA-256").digest(("nx:" + accountId).toByteArray())
             return digest.take(8).joinToString("") { "%02x".format(it) }
         }
     }
