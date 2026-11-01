@@ -1,5 +1,11 @@
 package id.nexrify.music
 
+import id.nexrify.music.ui.screens.AuthScreen
+
+import id.nexrify.music.data.account.AccountSync
+
+import id.nexrify.music.data.account.AccountManager
+
 import id.nexrify.music.ui.screens.MailboxScreen
 
 import id.nexrify.music.ui.components.UpdateDialog
@@ -153,8 +159,17 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(LocalStrings provides strings) {
                 NexrifyTheme(themeMode = themeMode) {
                     Box(Modifier.fillMaxSize()) {
-                        MainAppScreen(viewModel = viewModel)
-                        availableUpdate?.let { release ->
+                        val nexUser by AccountManager.getInstance().user.collectAsState()
+                        LaunchedEffect(nexUser?.id) {
+                            if (nexUser != null) {
+                                // Segarkan profil dan tarik data akun (tidak mengganggu kalau offline).
+                                AccountManager.getInstance().refresh()
+                                AccountSync.getInstance().initialSync(preferLocal = false)
+                                MailboxManager.getInstance().refresh()
+                            }
+                        }
+                        if (nexUser == null) AuthScreen() else MainAppScreen(viewModel = viewModel)
+                        if (nexUser != null) availableUpdate?.let { release ->
                             UpdateDialog(
                                 release = release,
                                 onLater = { updateManager.later(release) },
