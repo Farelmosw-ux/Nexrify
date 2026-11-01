@@ -80,6 +80,17 @@ class SettingsManager private constructor(private val context: Context) {
         capsuleListener = listener
     }
 
+    /** Baca ulang semua pengaturan dari penyimpanan (setelah data akun diterapkan). */
+    fun reloadFromPrefs() {
+        _themeMode.value = loadThemeMode()
+        _audioQuality.value = loadAudioQuality()
+        _autoTranslate.value = prefs.getBoolean(KEY_AUTO_TRANSLATE, true)
+        _language.value = loadLanguage()
+        _capsuleEnabled.value = prefs.getBoolean(KEY_CAPSULE, true)
+        _capsuleLocked.value = prefs.getBoolean(KEY_CAPSULE_LOCKED, false)
+        capsuleListener?.invoke()
+    }
+
     private fun loadThemeMode(): ThemeMode {
         val name = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
         return try {
