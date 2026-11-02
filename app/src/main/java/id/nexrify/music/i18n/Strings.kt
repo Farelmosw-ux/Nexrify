@@ -198,7 +198,8 @@ class Strings(val english: Boolean) {
         else -> raw
     }
     fun period(raw: String) = when (raw) {
-        "Maghrib" -> t("Maghrib", "Maghrib")
+        "Maghrib" -> t("Selamat Maghrib", "Maghrib time")
+        "Before Maghrib" -> t("Menjelang Maghrib", "Almost Maghrib")
         "Midnight" -> t("Tengah malam", "Midnight")
         "Midday" -> t("Tengah hari", "Midday")
         "Early Morning" -> t("Dini hari", "Early morning")
@@ -212,6 +213,63 @@ class Strings(val english: Boolean) {
         "Late Night" -> t("Larut malam", "Late night")
         else -> raw
     }
+
+
+    // Popup pemberitahuan
+    val noteSuccess get() = t("Berhasil", "Done")
+    val noteInfo get() = t("Info", "Info")
+    val noteWarning get() = t("Perhatian", "Heads up")
+    val noteError get() = t("Gagal", "Oops")
+    val notePlaylistTitle get() = t("Masuk ke playlist", "Added to playlist")
+    fun notePlaylistAdded(track: String, playlist: String) = t("\"$track\" sudah masuk ke playlist $playlist", "\"$track\" was added to $playlist")
+    fun notePlaylistExists(playlist: String) = t("Lagu ini sudah ada di playlist $playlist", "This song is already in $playlist")
+    fun notePlaylistCreated(playlist: String, track: String) = t("Playlist $playlist dibuat dan \"$track\" sudah masuk", "Playlist $playlist created with \"$track\"")
+    fun notePlaylistDeleted(playlist: String) = t("Playlist $playlist dihapus", "Playlist $playlist deleted")
+    val notePlaylistDeletedTitle get() = t("Playlist dihapus", "Playlist deleted")
+    fun favAdded(track: String) = t("\"$track\" ditambahkan ke lagu favorit", "\"$track\" added to your favorites")
+    fun favRemoved(track: String) = t("\"$track\" dihapus dari lagu favorit", "\"$track\" removed from your favorites")
+    val favTitleAdded get() = t("Disukai", "Liked")
+    val favTitleRemoved get() = t("Batal suka", "Unliked")
+    val noteQueueTitle get() = t("Antrian", "Queue")
+    val noteDownloadTitle get() = t("Unduhan", "Download")
+    val noteCacheTitle get() = t("Penyimpanan", "Storage")
+    val noteProfileTitle get() = t("Akun", "Account")
+    val noteLocationTitle get() = t("Lokasi", "Location")
+    val noteCapsuleTitle get() = t("Kapsul musik", "Music capsule")
+    val noteOfflineTitle get() = t("Mode offline", "Offline mode")
+    val noteUpdateTitle get() = t("Pembaruan", "Update")
+
+    // Pengingat Maghrib
+    val reminderSettingTitle get() = t("Pengingat sebelum Maghrib", "Pre-Maghrib reminder")
+    val reminderSettingDesc get() = t(
+        "Muncul popup sebelum azan Maghrib dan musik dijeda sementara. Bisa dimatikan kapan saja.",
+        "Shows a popup before Maghrib and pauses your music for a moment. You can turn it off anytime."
+    )
+    val reminderTitleBefore get() = t("Maghrib sebentar lagi", "Maghrib is almost here")
+    val reminderTitleNow get() = t("Waktu Maghrib telah tiba", "It's Maghrib time")
+    fun reminderBody(time: String, now: Boolean) = if (now) t(
+        "Waktu Maghrib sudah masuk (sekitar pukul $time di lokasimu). Bagi yang beragama Islam, silakan berhenti sejenak dan tunaikan salat Maghrib. Bagi yang non-Muslim, silakan lanjutkan aktivitasmu dengan nyaman. Salam toleransi untuk kita semua. 🤍",
+        "Maghrib has begun (around $time at your location). For those who observe it, please pause and make time for the Maghrib prayer. For everyone else, please carry on comfortably. Peace and respect to all of us. 🤍"
+    ) else t(
+        "Waktu Maghrib hampir tiba, sekitar pukul $time di lokasimu. Bagi yang beragama Islam, silakan berhenti sejenak dan bersiap salat Maghrib. Bagi yang non-Muslim, silakan lanjutkan aktivitasmu dengan nyaman. Salam toleransi untuk kita semua. 🤍",
+        "Maghrib is almost here, around $time at your location. For those who observe it, please pause and get ready for the Maghrib prayer. For everyone else, please carry on comfortably. Peace and respect to all of us. 🤍"
+    )
+    val reminderMusicPaused get() = t("Musik dijeda selama popup ini tampil.", "Your music is paused while this popup is open.")
+    val reminderClose get() = t("TUTUP", "CLOSE")
+    val reminderExit get() = t("KELUAR", "EXIT")
+    val reminderCloseHint get() = t("TUTUP melanjutkan musik. KELUAR menutup aplikasi dan musik tetap berhenti sampai kamu menyalakannya lagi.", "CLOSE resumes your music. EXIT closes the app and keeps the music stopped until you start it again.")
+
+    // Izin lokasi untuk Maghrib
+    val locPromptTitle get() = t("Izinkan lokasi untuk Maghrib", "Allow location for Maghrib")
+    val locPromptBody get() = t(
+        "Nexrify butuh lokasimu untuk menghitung waktu Maghrib yang pas di kotamu, lalu menampilkan sapaan dan pengingat sebelum azan. Lokasi cuma dipakai di HP dan tidak dikirim ke mana pun.",
+        "Nexrify needs your location to work out the exact Maghrib time in your city and show the greeting and reminder before the call to prayer. Your location stays on your phone and is never sent anywhere."
+    )
+    val locPromptAllow get() = t("Izinkan lokasi", "Allow location")
+    val locPromptSettings get() = t("Buka pengaturan izin", "Open permission settings")
+    val locPromptSettingsHint get() = t("Izin lokasi ditolak permanen. Buka pengaturan aplikasi lalu aktifkan Lokasi.", "Location was denied permanently. Open app settings and turn on Location.")
+    val locPromptLater get() = t("Nanti saja", "Maybe later")
+    val locGranted get() = t("Lokasi aktif, jadwal Maghrib sedang diperbarui", "Location is on, updating your Maghrib time")
 
     // Cari
     val searchTitle get() = t("Cari", "Search")
@@ -253,12 +311,12 @@ class Strings(val english: Boolean) {
     // Maghrib dan lokasi
     val maghribTitle get() = t("Sapaan Maghrib", "Maghrib greeting")
     val maghribDesc get() = t(
-        "Dihitung dari lokasi dan zona waktumu, jadi pas dengan kotamu dan ikut berubah kalau kamu pindah tempat.",
-        "Calculated from your location and time zone, so it fits your city and follows you when you move."
+        "Wajib izinkan lokasi. Waktu Maghrib dihitung langsung dari terbenam matahari di kotamu, jadi pas dan ikut berubah kalau kamu pindah tempat.",
+        "Location access is required. Maghrib is calculated from the sunset in your city, so it stays accurate and follows you when you move."
     )
     val maghribNoPermission get() = t(
-        "Izin lokasi belum diberikan, jadi sapaan Maghrib belum tampil. Musik tetap bisa dipakai seperti biasa.",
-        "Location permission isn't granted, so the Maghrib greeting isn't shown. Music works as usual."
+        "Izin lokasi belum diberikan, jadi sapaan dan pengingat Maghrib belum aktif. Musik tetap bisa dipakai seperti biasa.",
+        "Location permission isn't granted, so the Maghrib greeting and reminder are off. Music works as usual."
     )
     val maghribLocating get() = t("Lagi nyari lokasimu…", "Finding your location…")
     val maghribUnavailable get() = t(
@@ -266,10 +324,10 @@ class Strings(val english: Boolean) {
         "Couldn't get your location, so the Maghrib greeting is off for now. Turn on location and try again."
     )
     fun maghribReady(time: String) = t("Maghrib hari ini sekitar $time di lokasimu.", "Maghrib today is around $time at your location.")
-    val maghribNote get() = t("Hitungan astronomi, bisa selisih 1 sampai 3 menit dari jadwal resmi.", "Astronomical calculation, may differ by 1 to 3 minutes from the official schedule.")
+    val maghribNote get() = t("Dihitung dari terbenam matahari di lokasimu, pas sampai ke menit. Bisa selisih sekitar 1 menit dari jadwal resmi.", "Calculated from the sunset at your location, accurate to the minute. May differ by about 1 minute from the official schedule.")
     val maghribGrant get() = t("Izinkan lokasi", "Allow location")
     val maghribRetry get() = t("Coba lagi", "Try again")
-    val maghribHomeHint get() = t("Aktifkan lokasi di Pengaturan biar sapaan Maghrib sesuai jadwal di kotamu.", "Turn on location in Settings so the Maghrib greeting follows your city's schedule.")
+    val maghribHomeHint get() = t("Izinkan lokasi supaya sapaan dan pengingat Maghrib pas dengan jadwal di kotamu.", "Allow location so the Maghrib greeting and reminder match your city's schedule.")
     val googleUser get() = t("Pengguna Google", "Google user")
 
     val likeAction get() = t("Suka", "Like")
