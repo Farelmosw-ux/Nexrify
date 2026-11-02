@@ -109,7 +109,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         while (true) {
             localNow = java.time.ZonedDateTime.now()
-            delay(30_000L)
+            delay(10_000L)
         }
     }
 
@@ -418,7 +418,7 @@ fun YtmMusicCard(
     LaunchedEffect(Unit) {
         while (true) {
             localNow = java.time.ZonedDateTime.now()
-            delay(30_000L)
+            delay(10_000L)
         }
     }
 
