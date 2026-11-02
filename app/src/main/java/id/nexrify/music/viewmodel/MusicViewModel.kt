@@ -755,11 +755,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun playTrack(track: Track, newQueue: List<Track> = emptyList(), startPositionMs: Long = 0L) {
         // Tanpa internet hanya lagu yang sudah diunduh yang bisa diputar.
         if (!offline.isDownloaded(track.id) && !network.isOnline()) {
-            android.widget.Toast.makeText(
-                getApplication(),
-                id.nexrify.music.i18n.currentStrings().offlineNotDownloaded,
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            val st = id.nexrify.music.i18n.currentStrings()
+            id.nexrify.music.ui.components.NexNotifier.warning(st.offlineNotDownloaded, st.noteOfflineTitle)
             _isLoadingTrack.value = false
             return
         }
@@ -919,6 +916,25 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Jeda musik untuk pengingat Maghrib. True kalau tadinya sedang diputar. */
+    fun pauseForPrayer(): Boolean {
+        val controller = mediaController ?: return false
+        val wasPlaying = controller.isPlaying || controller.playWhenReady
+        if (wasPlaying) controller.pause()
+        return wasPlaying
+    }
+
+    /** Lanjutkan musik setelah popup Maghrib ditutup. */
+    fun resumeAfterPrayer() {
+        mediaController?.play()
+    }
+
+    /** Hentikan musik saat pengguna keluar dari aplikasi lewat popup Maghrib. Tidak diputar lagi otomatis. */
+    fun stopForExit() {
+        mediaController?.pause()
+        _isPlaying.value = false
+    }
+
     fun getProgress(): Float {
         val d = if (_duration.value > 0) _duration.value else ((_currentTrack.value?.durationSeconds ?: 0) * 1000L)
         return if (d > 0) (_playbackPosition.value.toFloat() / d.toFloat()).coerceIn(0f, 1f) else 0f
@@ -1044,6 +1060,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
         _favorites.value = currentFavs
         saveStoredFavorites(currentFavs)
+        val noteStrings = id.nexrify.music.i18n.currentStrings()
+        id.nexrify.music.ui.components.NexNotifier.success(
+            if (exists) noteStrings.favRemoved(track.title) else noteStrings.favAdded(track.title),
+            if (exists) noteStrings.favTitleRemoved else noteStrings.favTitleAdded
+        )
 
         if (_currentTrack.value?.id == track.id) {
             _currentTrack.value = _currentTrack.value?.copy(isFavorite = !exists)
