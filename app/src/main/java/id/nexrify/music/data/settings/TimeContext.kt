@@ -13,6 +13,9 @@ object TimeContext {
     /** Lama sapaan Maghrib tampil sejak azan, dalam menit. */
     const val MAGHRIB_WINDOW_MINUTES = 20L
 
+    /** Lama sapaan "Menjelang Maghrib" dan popup pengingat sebelum azan, dalam menit. */
+    const val PRE_MAGHRIB_MINUTES = 10L
+
     private val MAGHRIB_MIN = LocalTime.of(15, 0)
     private val MAGHRIB_MAX = LocalTime.of(21, 0)
 
@@ -30,12 +33,21 @@ object TimeContext {
         if (maghrib != null && maghribEnd != null && time >= maghrib && time < maghribEnd) {
             return HomeTimeContext(
                 "Maghrib",
-                "Waktunya salat Maghrib bagi yang beragama Islam. Yuk, istirahatkan sejenak aktivitasmu dan tunaikan ibadah. 🤍",
-                "It's time for Maghrib prayer for those who observe it. Take a short break from your activities and make time for prayer. 🤍"
+                "Waktunya salat Maghrib bagi yang beragama Islam, yuk tunaikan dulu. Bagi yang non-Muslim, silakan lanjutkan aktivitasmu. Salam toleransi untuk kita semua. 🤍",
+                "It's time for Maghrib prayer for those who observe it. For everyone else, please carry on with your day. Peace and respect to all of us. 🤍"
             )
         }
 
-        val lateAfternoonEnd = maghrib ?: LocalTime.of(17, 15)
+        val preMaghribStart = maghrib?.minusMinutes(PRE_MAGHRIB_MINUTES)
+        if (maghrib != null && preMaghribStart != null && time >= preMaghribStart && time < maghrib) {
+            return HomeTimeContext(
+                "Before Maghrib",
+                "Maghrib sebentar lagi. Yang beragama Islam bisa bersiap salat, yang non-Muslim silakan lanjutkan dengan nyaman. 🤍",
+                "Maghrib is almost here. Those who observe can get ready to pray, everyone else can carry on comfortably. 🤍"
+            )
+        }
+
+        val lateAfternoonEnd = preMaghribStart ?: LocalTime.of(17, 15)
         val eveningStart = maghribEnd ?: lateAfternoonEnd
         val eveningEnd = maxOf(LocalTime.of(19, 0), eveningStart.plusMinutes(30))
 
