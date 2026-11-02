@@ -221,4 +221,16 @@ object NexIcons {
         )
     }
     val ArrowBack by lazy { icon("ArrowBack", "M20 12 H4", "M10 6 L4 12 L10 18") }
+    val Timer by lazy {
+        icon(
+            "Timer",
+            circle(12f, 13.5f, 7.5f), "M12 9.5 V13.5 L14.5 15", "M9.5 2.8 H14.5", "M12 2.8 V6"
+        )
+    }
+    val Speed by lazy {
+        icon(
+            "Speed",
+            "M4.2 17.5 A9 9 0 1 1 19.8 17.5", "M12 13.5 L16 8.5", circle(12f, 14f, 1.2f)
+        )
+    }
 }
