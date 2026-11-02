@@ -488,6 +488,15 @@ fun FullPlayerSheet(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Aksi cepat: playlist, unduh, timer tidur, kecepatan, bagikan
+            PlayerQuickActions(
+                track = track,
+                viewModel = viewModel,
+                onAddToPlaylist = { showAddToPlaylist = true }
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // -------------------------------------------------------------
