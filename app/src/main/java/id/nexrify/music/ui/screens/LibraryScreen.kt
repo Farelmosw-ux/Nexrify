@@ -340,7 +340,12 @@ fun LibraryScreen(
                                         color = colors.textMuted
                                     )
                                 }
-                                IconButton(onClick = { viewModel.deletePlaylist(playlist.id) }) {
+                                IconButton(onClick = {
+                                    viewModel.deletePlaylist(playlist.id)
+                                    id.nexrify.music.i18n.currentStrings().let {
+                                        id.nexrify.music.ui.components.NexNotifier.info(it.notePlaylistDeleted(playlist.name), it.notePlaylistDeletedTitle)
+                                    }
+                                }) {
                                     Icon(
                                         imageVector = NexIcons.DeleteOutline,
                                         contentDescription = S.cd("Delete"),
