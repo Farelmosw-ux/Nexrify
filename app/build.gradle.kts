@@ -13,8 +13,8 @@ android {
         applicationId = "id.nexrify.music"
         minSdk = 26
         targetSdk = 34
-        versionCode = 33
-        versionName = "4.0.1"
+        versionCode = 34
+        versionName = "4.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -56,6 +56,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -102,6 +103,9 @@ dependencies {
 
     // Coil Image Loading
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    // Desugaring API Java 8-11 (URLDecoder, dll) untuk Android 8-12, dibutuhkan NewPipeExtractor
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.0.4")
 
     // NewPipeExtractor
     implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
