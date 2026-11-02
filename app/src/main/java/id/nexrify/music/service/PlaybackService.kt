@@ -35,7 +35,7 @@ class PlaybackService : MediaSessionService() {
     private var player: Player? = null
     private var mediaSession: MediaSession? = null
     private var capsule: id.nexrify.music.capsule.MusicCapsuleController? = null
-    private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
+    private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main + id.nexrify.music.util.CrashReporter.handler)
     private var favoriteJob: kotlinx.coroutines.Job? = null
 
     /** Tombol di notifikasi dan kontrol media: suka dan tampilkan/sembunyikan kapsul. */
