@@ -545,7 +545,7 @@ fun PlaylistDetailView(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${playlist.tracks.size} Lagu",
+                        text = S.songCount(playlist.tracks.size),
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -614,7 +614,15 @@ fun PlaylistDetailView(
                         isLoading = isLoadingTrack && currentTrack?.id == track.id,
                         onClick = { viewModel.playPlaylist(playlist, startTrack = track) },
                         onFavoriteClick = { viewModel.toggleFavorite(track) },
-                        onMoreClick = { onAddTrackClick(track) }
+                        onMoreClick = { onAddTrackClick(track) },
+                        onRemoveClick = {
+                            viewModel.removeTrackFromPlaylist(playlist.id, track.id)
+                            id.nexrify.music.i18n.currentStrings().let {
+                                id.nexrify.music.ui.components.NexNotifier.info(
+                                    it.notePlaylistRemoved(track.title, playlist.name), it.notePlaylistRemovedTitle
+                                )
+                            }
+                        }
                     )
                 }
             }
