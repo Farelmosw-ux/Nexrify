@@ -124,7 +124,7 @@ fun EditProfileDialog(onDismiss: () -> Unit) {
                     run {
                         accounts.updateProfile(display.trim().ifBlank { null }, newAvatar)
                         newAvatar = null
-                        Toast.makeText(context, currentStrings().profileSaved, Toast.LENGTH_SHORT).show()
+                        NexNotifier.success(currentStrings().profileSaved, currentStrings().noteProfileTitle)
                     }
                 },
                 enabled = !busy, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(16.dp),
@@ -151,7 +151,7 @@ fun EditProfileDialog(onDismiss: () -> Unit) {
                     run {
                         accounts.changePassword(oldPw, newPw)
                         oldPw = ""; newPw = ""
-                        Toast.makeText(context, currentStrings().passwordChanged, Toast.LENGTH_SHORT).show()
+                        NexNotifier.success(currentStrings().passwordChanged, currentStrings().noteProfileTitle)
                     }
                 },
                 enabled = !busy && oldPw.isNotBlank() && newPw.length >= 6,
