@@ -118,8 +118,9 @@ fun SettingsDialog(
     val maghribManager = remember { MaghribManager.getInstance() }
     val maghribStatus by maghribManager.status.collectAsState()
     val maghribPlace by maghribManager.place.collectAsState()
-    val locationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+    val locationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         maghribManager.refresh()
+        if (granted) NexNotifier.success(currentStrings().locGranted, currentStrings().noteLocationTitle)
     }
     LaunchedEffect(Unit) { maghribManager.refresh() }
     val capsuleEnabled by settingsManager.capsuleEnabled.collectAsState()
@@ -249,7 +250,7 @@ fun SettingsDialog(
                     }
                     Button(onClick = {
                         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(NexrifyLinks.SITE))) }
-                            .onFailure { Toast.makeText(context, currentStrings().cannotOpenUpdate, Toast.LENGTH_SHORT).show() }
+                            .onFailure { NexNotifier.error(currentStrings().cannotOpenUpdate, currentStrings().noteUpdateTitle) }
                     }, colors = ButtonDefaults.buttonColors(containerColor = colors.card, contentColor = colors.textPrimary), modifier = Modifier.weight(1f)) {
                         Text(S.openReleases)
                     }
@@ -321,7 +322,7 @@ fun SettingsDialog(
                                         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     )
                                 }.onFailure {
-                                    Toast.makeText(context, currentStrings().capsuleNeedPermissionToast, Toast.LENGTH_SHORT).show()
+                                    NexNotifier.warning(currentStrings().capsuleNeedPermissionToast, currentStrings().noteCapsuleTitle)
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.background)
@@ -386,6 +387,26 @@ fun SettingsDialog(
                             Text(if (maghribStatus == MaghribManager.Status.NO_PERMISSION) S.maghribGrant else S.maghribRetry)
                         }
                     }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                val prayerReminder = remember { id.nexrify.music.data.prayer.MaghribReminder.getInstance() }
+                val reminderEnabled by prayerReminder.enabled.collectAsState()
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(S.reminderSettingTitle, style = Typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
+                        Text(S.reminderSettingDesc, style = Typography.bodySmall, color = colors.textMuted)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Switch(
+                        checked = reminderEnabled,
+                        onCheckedChange = { prayerReminder.setEnabled(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = colors.background,
+                            checkedTrackColor = colors.accent,
+                            uncheckedThumbColor = colors.textSecondary,
+                            uncheckedTrackColor = colors.card
+                        )
+                    )
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 HorizontalDivider(color = colors.border, thickness = 1.dp)
@@ -623,7 +644,7 @@ fun SettingsDialog(
                                     val success = settingsManager.clearCacheAsync()
                                     if (success) {
                                         cacheSize = settingsManager.getFormattedCacheSizeAsync()
-                                        Toast.makeText(context, currentStrings().cacheCleared, Toast.LENGTH_SHORT).show()
+                                        NexNotifier.success(currentStrings().cacheCleared, currentStrings().noteCacheTitle)
                                     }
                                 }
                             }
