@@ -262,8 +262,6 @@ class Strings(val english: Boolean) {
     val removeFromQueueAction get() = t("Hapus dari antrian", "Remove from queue")
     val toastQueueRemoved get() = t("Dihapus dari antrian", "Removed from queue")
     val toastQueueIsCurrent get() = t("Lagu ini sedang diputar", "This song is playing right now")
-    val likeAction get() = t("Suka", "Like")
-    val unlikeAction get() = t("Batal suka", "Unlike")
     val noteQueueTitle get() = t("Antrian", "Queue")
     val noteDownloadTitle get() = t("Unduhan", "Download")
     val noteCacheTitle get() = t("Penyimpanan", "Storage")
