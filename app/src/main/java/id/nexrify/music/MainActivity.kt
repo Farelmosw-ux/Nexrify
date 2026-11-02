@@ -193,6 +193,13 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+                        if (nexUser != null && !showLaunch) {
+                            // Wajib izin lokasi untuk Maghrib, lalu pantau waktu Maghrib secara real-time.
+                            id.nexrify.music.ui.components.LocationPermissionPrompt()
+                            id.nexrify.music.ui.components.MaghribReminderHost(viewModel)
+                        }
+                        // Popup pemberitahuan bergaya untuk semua fitur.
+                        id.nexrify.music.ui.components.NexNotificationHost()
                         AnimatedVisibility(
                             visible = showLaunch,
                             enter = fadeIn(tween(120)),
