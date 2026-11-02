@@ -153,6 +153,10 @@ object NexIcons {
     val Logout by lazy {
         icon("Logout", "M9 4 H5 A2 2 0 0 0 3 6 V18 A2 2 0 0 0 5 20 H9", "M16 8 L20 12 L16 16", "M20 12 H9")
     }
+    val Moon by lazy { icon("Moon", "M20 14.2 A8.5 8.5 0 1 1 9.8 4 A6.8 6.8 0 0 0 20 14.2 Z") }
+    val Location by lazy {
+        icon("Location", "M12 21 C12 21 5 14.8 5 9.5 A7 7 0 0 1 19 9.5 C19 14.8 12 21 12 21 Z", circle(12f, 9.5f, 2.4f))
+    }
     val Info by lazy { icon("Info", circle(12f, 12f, 9f), "M12 11 V16", "M12 7.8 V7.9") }
     val Headphones by lazy {
         icon(
