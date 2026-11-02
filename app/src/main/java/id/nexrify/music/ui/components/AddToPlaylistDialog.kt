@@ -129,7 +129,7 @@ fun AddToPlaylistDialog(
                     modifier = Modifier.weight(1f),
                     onClick = {
                         viewModel.playNext(track)
-                        android.widget.Toast.makeText(queueContext, id.nexrify.music.i18n.currentStrings().toastPlayNext, android.widget.Toast.LENGTH_SHORT).show()
+                        id.nexrify.music.i18n.currentStrings().let { NexNotifier.success(it.toastPlayNext, it.noteQueueTitle) }
                         onDismiss()
                     }
                 )
@@ -139,7 +139,7 @@ fun AddToPlaylistDialog(
                     modifier = Modifier.weight(1f),
                     onClick = {
                         viewModel.addToQueue(track)
-                        android.widget.Toast.makeText(queueContext, id.nexrify.music.i18n.currentStrings().toastQueued, android.widget.Toast.LENGTH_SHORT).show()
+                        id.nexrify.music.i18n.currentStrings().let { NexNotifier.success(it.toastQueued, it.noteQueueTitle) }
                         onDismiss()
                     }
                 )
@@ -167,7 +167,7 @@ fun AddToPlaylistDialog(
                     when {
                         isDownloaded -> {
                             viewModel.deleteOffline(track.id)
-                            android.widget.Toast.makeText(queueContext, strings.toastDownloadRemoved, android.widget.Toast.LENGTH_SHORT).show()
+                            NexNotifier.info(strings.toastDownloadRemoved, strings.noteDownloadTitle)
                             onDismiss()
                         }
                         downloadState != null && downloadState !is id.nexrify.music.data.download.DownloadState.Failed -> {
@@ -175,7 +175,7 @@ fun AddToPlaylistDialog(
                         }
                         else -> {
                             viewModel.downloadTrack(track)
-                            android.widget.Toast.makeText(queueContext, strings.toastDownloadStarted, android.widget.Toast.LENGTH_SHORT).show()
+                            NexNotifier.success(strings.toastDownloadStarted, strings.noteDownloadTitle)
                             onDismiss()
                         }
                     }
@@ -252,9 +252,13 @@ fun AddToPlaylistDialog(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(if (alreadyInPlaylist) colors.card.copy(alpha = 0.5f) else colors.card)
                                 .clickable {
+                                    val st = id.nexrify.music.i18n.currentStrings()
                                     if (!alreadyInPlaylist) {
                                         viewModel.addTrackToPlaylist(playlist.id, track)
+                                        NexNotifier.success(st.notePlaylistAdded(track.title, playlist.name), st.notePlaylistTitle)
                                         onDismiss()
+                                    } else {
+                                        NexNotifier.info(st.notePlaylistExists(playlist.name), st.notePlaylistTitle)
                                     }
                                 }
                                 .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -338,6 +342,9 @@ fun AddToPlaylistDialog(
                         if (newPlaylistName.isNotBlank()) {
                             val created = viewModel.createPlaylist(newPlaylistName.trim())
                             viewModel.addTrackToPlaylist(created.id, track)
+                            id.nexrify.music.i18n.currentStrings().let {
+                                NexNotifier.success(it.notePlaylistCreated(newPlaylistName.trim(), track.title), it.notePlaylistTitle)
+                            }
                             showCreateDialog = false
                             onDismiss()
                         }
