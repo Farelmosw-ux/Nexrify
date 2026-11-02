@@ -60,7 +60,7 @@ data class DownloadItem(val track: Track, val state: DownloadState)
  */
 class OfflineManager private constructor(private val context: Context) {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + id.nexrify.music.util.CrashReporter.handler)
     private val repository = MusicRepository()
 
     private var accountKey: String = keyFor(AccountManager.getInstance().userId())
