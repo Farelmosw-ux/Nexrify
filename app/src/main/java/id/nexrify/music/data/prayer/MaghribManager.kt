@@ -20,9 +20,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import kotlin.math.acos
 import kotlin.math.asin
-import kotlin.math.atan
 import kotlin.math.cos
-import kotlin.math.floor
 import kotlin.math.sin
 import kotlin.math.tan
 
@@ -175,13 +173,16 @@ class MaghribManager private constructor(private val context: Context) {
         if (!hasPermission()) return null
         val place = usablePlace() ?: return null
         val sunset = sunset(date, place.latitude, place.longitude, zone) ?: return null
-        return sunset.plusMinutes(IHTIYAT_MINUTES).toLocalTime()
+        // Dibulatkan ke menit terdekat supaya sama dengan yang tampil di jam dan adzan.
+        return sunset.plusMinutes(IHTIYAT_MINUTES).plusSeconds(30)
+            .truncatedTo(java.time.temporal.ChronoUnit.MINUTES).toLocalTime()
     }
 
     companion object {
         private const val FRESH_MS = 30 * 60 * 1000L
         private const val MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000L
-        private const val IHTIYAT_MINUTES = 2L
+        /** Maghrib = terbenam matahari. Isi 2 kalau ingin mengikuti ihtiyat Kemenag. */
+        private const val IHTIYAT_MINUTES = 0L
 
         @Volatile
         private var instance: MaghribManager? = null
@@ -202,29 +203,55 @@ class MaghribManager private constructor(private val context: Context) {
             return r
         }
 
-        /** Terbenam matahari (pusat matahari di -0,833 derajat), algoritma almanak astronomi. Akurat sekitar 1 sampai 2 menit. */
+        /**
+         * Terbenam matahari (pusat matahari di -0,833 derajat) memakai algoritma posisi matahari NOAA,
+         * dua putaran supaya selisihnya cuma hitungan detik. Hasil dibuat per tanggal lokal [date].
+         */
         internal fun sunset(date: LocalDate, lat: Double, lng: Double, zone: ZoneId): ZonedDateTime? {
-            val n = date.dayOfYear
-            val lngHour = lng / 15.0
-            val t = n + ((18.0 - lngHour) / 24.0)
-            val m = 0.9856 * t - 3.289
-            val l = norm360(m + 1.916 * sin(rad(m)) + 0.020 * sin(rad(2 * m)) + 282.634)
-            var ra = norm360(deg(atan(0.91764 * tan(rad(l)))))
-            ra = (ra + (floor(l / 90.0) * 90.0 - floor(ra / 90.0) * 90.0)) / 15.0
-            val sinDec = 0.39782 * sin(rad(l))
-            val cosDec = cos(asin(sinDec))
-            val cosH = (cos(rad(90.833)) - sinDec * sin(rad(lat))) / (cosDec * cos(rad(lat)))
-            if (cosH > 1.0 || cosH < -1.0) return null
-            val h = deg(acos(cosH)) / 15.0
-            val localMeanTime = h + ra - 0.06571 * t - 6.622
-            var ut = (localMeanTime - lngHour) % 24.0
-            if (ut < 0) ut += 24.0
             for (shift in longArrayOf(0, -1, 1)) {
-                val base = date.plusDays(shift).atStartOfDay(ZoneOffset.UTC)
-                val zoned = base.plusSeconds((ut * 3600.0).toLong()).withZoneSameInstant(zone)
+                val calcDate = date.plusDays(shift)
+                val minutes = sunsetUtcMinutes(calcDate, lat, lng) ?: return null
+                val zoned = calcDate.atStartOfDay(ZoneOffset.UTC)
+                    .plusSeconds((minutes * 60.0).toLong())
+                    .withZoneSameInstant(zone)
                 if (zoned.toLocalDate() == date) return zoned
             }
             return null
+        }
+
+        /** Menit sejak 00:00 UTC pada tanggal [date] saat matahari terbenam di ([lat], [lng]). */
+        private fun sunsetUtcMinutes(date: LocalDate, lat: Double, lng: Double): Double? {
+            val jd0 = date.toEpochDay() + 2440587.5
+            var minutes = 720.0 - 4.0 * lng
+            for (pass in 0 until 2) {
+                val jd = jd0 + minutes / 1440.0
+                val t = (jd - 2451545.0) / 36525.0
+                val l0 = norm360(280.46646 + t * (36000.76983 + t * 0.0003032))
+                val m = 357.52911 + t * (35999.05029 - 0.0001537 * t)
+                val e = 0.016708634 - t * (0.000042037 + 0.0000001267 * t)
+                val c = sin(rad(m)) * (1.914602 - t * (0.004817 + 0.000014 * t)) +
+                    sin(rad(2 * m)) * (0.019993 - 0.000101 * t) +
+                    sin(rad(3 * m)) * 0.000289
+                val omega = 125.04 - 1934.136 * t
+                val lambda = l0 + c - 0.00569 - 0.00478 * sin(rad(omega))
+                val eps0 = 23.0 + (26.0 + (21.448 - t * (46.815 + t * (0.00059 - t * 0.001813))) / 60.0) / 60.0
+                val eps = eps0 + 0.00256 * cos(rad(omega))
+                val dec = asin(sin(rad(eps)) * sin(rad(lambda)))
+                val tanHalf = tan(rad(eps / 2.0))
+                val y = tanHalf * tanHalf
+                val eq = 4.0 * deg(
+                    y * sin(2 * rad(l0)) -
+                        2 * e * sin(rad(m)) +
+                        4 * e * y * sin(rad(m)) * cos(2 * rad(l0)) -
+                        0.5 * y * y * sin(4 * rad(l0)) -
+                        1.25 * e * e * sin(2 * rad(m))
+                )
+                val cosH = cos(rad(90.833)) / (cos(rad(lat)) * cos(dec)) - tan(rad(lat)) * tan(dec)
+                if (cosH > 1.0 || cosH < -1.0) return null
+                val ha = deg(acos(cosH))
+                minutes = 720.0 - 4.0 * lng - eq + 4.0 * ha
+            }
+            return minutes
         }
     }
 }
