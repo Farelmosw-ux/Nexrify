@@ -133,17 +133,43 @@ fun AddToPlaylistDialog(
                         onDismiss()
                     }
                 )
+                val queueList by viewModel.queue.collectAsState()
+                val queueIdx by viewModel.queueIndex.collectAsState()
+                val posInQueue = queueList.indexOfFirst { it.id == track.id }
+                val inQueue = posInQueue >= 0 && posInQueue != queueIdx
                 QueueActionTile(
-                    icon = NexIcons.QueueMusic,
-                    text = S.addToQueueAction,
+                    icon = if (inQueue) NexIcons.DeleteOutline else NexIcons.QueueMusic,
+                    text = if (inQueue) S.removeFromQueueAction else S.addToQueueAction,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        viewModel.addToQueue(track)
-                        id.nexrify.music.i18n.currentStrings().let { NexNotifier.success(it.toastQueued, it.noteQueueTitle) }
-                        onDismiss()
+                        val st = id.nexrify.music.i18n.currentStrings()
+                        when {
+                            inQueue -> {
+                                viewModel.removeFromQueue(posInQueue)
+                                NexNotifier.info(st.toastQueueRemoved, st.noteQueueTitle)
+                            }
+                            posInQueue >= 0 -> NexNotifier.info(st.toastQueueIsCurrent, st.noteQueueTitle)
+                            else -> {
+                                viewModel.addToQueue(track)
+                                NexNotifier.success(st.toastQueued, st.noteQueueTitle)
+                                onDismiss()
+                            }
+                        }
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Suka / batal suka
+            val favs by viewModel.favorites.collectAsState()
+            val isLiked = favs.any { it.id == track.id }
+            QueueActionTile(
+                icon = if (isLiked) NexIcons.Favorite else NexIcons.FavoriteBorder,
+                text = if (isLiked) S.unlikeAction else S.likeAction,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { viewModel.toggleFavorite(track) }
+            )
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -223,8 +249,18 @@ fun AddToPlaylistDialog(
                 text = S.choosePlaylist,
                 style = Typography.labelLarge.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                 color = colors.textMuted,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 2.dp)
             )
+            if (playlists.any { pl -> pl.tracks.any { it.id == track.id } }) {
+                Text(
+                    text = S.playlistTapToRemove,
+                    style = Typography.bodySmall.copy(fontSize = 11.sp),
+                    color = colors.textMuted,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(6.dp))
+            }
 
             if (playlists.isEmpty()) {
                 Box(
@@ -258,7 +294,9 @@ fun AddToPlaylistDialog(
                                         NexNotifier.success(st.notePlaylistAdded(track.title, playlist.name), st.notePlaylistTitle)
                                         onDismiss()
                                     } else {
-                                        NexNotifier.info(st.notePlaylistExists(playlist.name), st.notePlaylistTitle)
+                                        // Ketuk lagi = hapus dari playlist ini. Dialog tetap terbuka supaya bisa dibatalkan.
+                                        viewModel.removeTrackFromPlaylist(playlist.id, track.id)
+                                        NexNotifier.info(st.notePlaylistRemoved(track.title, playlist.name), st.notePlaylistRemovedTitle)
                                     }
                                 }
                                 .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -288,18 +326,23 @@ fun AddToPlaylistDialog(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "${playlist.tracks.size} lagu",
+                                    text = S.songCount(playlist.tracks.size),
                                     style = Typography.bodySmall,
                                     color = colors.textMuted
                                 )
                             }
                             if (alreadyInPlaylist) {
-                                Icon(
-                                    imageVector = NexIcons.Check,
-                                    contentDescription = S.cd("Added"),
-                                    tint = colors.textPrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                Box(
+                                    modifier = Modifier.size(26.dp).clip(CircleShape).background(colors.textPrimary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = NexIcons.Check,
+                                        contentDescription = S.cd("Added"),
+                                        tint = colors.background,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
                     }
