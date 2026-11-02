@@ -1071,6 +1071,65 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // ---- Timer tidur & kecepatan putar ----
+    private var sleepJob: kotlinx.coroutines.Job? = null
+    /** Sisa waktu timer tidur dalam detik, null kalau mati. -1 berarti "sampai lagu ini selesai". */
+    private val _sleepRemainingSec = MutableStateFlow<Int?>(null)
+    val sleepRemainingSec = _sleepRemainingSec.asStateFlow()
+    private var sleepEndOfTrackId: String? = null
+
+    fun startSleepTimer(minutes: Int) {
+        sleepJob?.cancel()
+        sleepEndOfTrackId = null
+        var left = minutes * 60
+        _sleepRemainingSec.value = left
+        sleepJob = viewModelScope.launch {
+            while (left > 0) {
+                kotlinx.coroutines.delay(1000L)
+                left -= 1
+                _sleepRemainingSec.value = left
+            }
+            finishSleepTimer()
+        }
+    }
+
+    fun startSleepUntilEndOfTrack() {
+        sleepJob?.cancel()
+        sleepEndOfTrackId = _currentTrack.value?.id
+        _sleepRemainingSec.value = -1
+        sleepJob = viewModelScope.launch {
+            // Pantau sampai lagu berganti atau selesai, lalu jeda.
+            while (_currentTrack.value?.id == sleepEndOfTrackId) {
+                kotlinx.coroutines.delay(500L)
+            }
+            finishSleepTimer()
+        }
+    }
+
+    fun cancelSleepTimer() {
+        sleepJob?.cancel()
+        sleepJob = null
+        sleepEndOfTrackId = null
+        _sleepRemainingSec.value = null
+    }
+
+    private fun finishSleepTimer() {
+        sleepJob = null
+        sleepEndOfTrackId = null
+        _sleepRemainingSec.value = null
+        mediaController?.pause()
+        val st = id.nexrify.music.i18n.currentStrings()
+        id.nexrify.music.ui.components.NexNotifier.info(st.sleepFired, st.noteSleepTitle)
+    }
+
+    private val _playbackSpeed = MutableStateFlow(1f)
+    val playbackSpeed = _playbackSpeed.asStateFlow()
+
+    fun setPlaybackSpeed(speed: Float) {
+        _playbackSpeed.value = speed
+        mediaController?.setPlaybackSpeed(speed)
+    }
+
     fun expandPlayer(expand: Boolean) {
         _isPlayerExpanded.value = expand
     }
