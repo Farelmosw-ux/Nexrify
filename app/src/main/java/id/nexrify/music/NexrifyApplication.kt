@@ -19,6 +19,7 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
 
     override fun onCreate() {
         super.onCreate()
+        id.nexrify.music.util.CrashReporter.install(this)
         AuthManager.init(this)
         id.nexrify.music.data.account.AccountManager.init(this)
         id.nexrify.music.data.account.AccountSync.init(this).startWatching()
@@ -29,12 +30,18 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
         id.nexrify.music.data.mailbox.MailboxManager.init(this)
 
         // Cek kotak surat tiap 10 menit selama proses hidup (musik diputar atau aplikasi dibuka) dan beri notifikasi surat baru.
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO + id.nexrify.music.util.CrashReporter.handler).launch {
             while (true) {
-                if (id.nexrify.music.data.account.AccountManager.getInstance().isLoggedIn()) {
-                    val box = id.nexrify.music.data.mailbox.MailboxManager.getInstance()
-                    box.refresh()
-                    box.notifyNew(this@NexrifyApplication)
+                try {
+                    if (id.nexrify.music.data.account.AccountManager.getInstance().isLoggedIn()) {
+                        val box = id.nexrify.music.data.mailbox.MailboxManager.getInstance()
+                        box.refresh()
+                        box.notifyNew(this@NexrifyApplication)
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    id.nexrify.music.util.CrashReporter.logNonFatal(e)
                 }
                 kotlinx.coroutines.delay(10 * 60_000L)
             }
