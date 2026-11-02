@@ -40,6 +40,8 @@ fun CrashReportDialog(report: String, onClose: () -> Unit) {
     val colors = NexrifyAppTheme.colors
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
+    val copiedText = S.crashCopied
+    val shareText = S.crashShare
 
     NexDialogCard(icon = NexIcons.Info, title = S.crashTitle, onDismiss = onClose, danger = true) {
         Text(S.crashBody, style = Typography.bodyMedium, color = colors.textMuted)
@@ -66,7 +68,7 @@ fun CrashReportDialog(report: String, onClose: () -> Unit) {
             OutlinedButton(
                 onClick = {
                     clipboard.setText(AnnotatedString(report))
-                    Toast.makeText(context, S.crashCopied, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, copiedText, Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.weight(1f).height(48.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -75,12 +77,12 @@ fun CrashReportDialog(report: String, onClose: () -> Unit) {
             Button(
                 onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, report)
-                    runCatching { context.startActivity(Intent.createChooser(send, S.crashShare).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                    runCatching { context.startActivity(Intent.createChooser(send, shareText).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 },
                 modifier = Modifier.weight(1f).height(48.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.background)
-            ) { Text(S.crashShare, fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+            ) { Text(shareText, fontWeight = FontWeight.Bold, fontSize = 13.sp) }
         }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
