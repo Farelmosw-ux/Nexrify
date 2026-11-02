@@ -1,5 +1,9 @@
 package id.nexrify.music
 
+import id.nexrify.music.ui.components.CrashReportDialog
+
+import id.nexrify.music.util.CrashReporter
+
 import id.nexrify.music.ui.screens.AuthScreen
 
 import id.nexrify.music.data.account.AccountSync
@@ -143,6 +147,8 @@ class MainActivity : ComponentActivity() {
                 MailboxManager.getInstance().refresh()
             }
 
+            var crashReport by remember { mutableStateOf(CrashReporter.pending(appContext)) }
+
             var showLaunch by remember { mutableStateOf(true) }
             val loadProgress = rememberEstimatedProgress(active = !initialLoadDone)
             LaunchedEffect(initialLoadDone) {
@@ -159,6 +165,9 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(LocalStrings provides strings) {
                 NexrifyTheme(themeMode = themeMode) {
                     Box(Modifier.fillMaxSize()) {
+                        crashReport?.let { report ->
+                            CrashReportDialog(report = report, onClose = { CrashReporter.clear(appContext); crashReport = null })
+                        }
                         val nexUser by AccountManager.getInstance().user.collectAsState()
                         LaunchedEffect(nexUser?.id) {
                             if (nexUser != null) {
