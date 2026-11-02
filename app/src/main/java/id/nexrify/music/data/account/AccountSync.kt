@@ -38,7 +38,7 @@ class AccountSync private constructor(private val context: Context) {
         Spec("nexrify_mailbox", sets = listOf("read", "hidden"))
     )
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + id.nexrify.music.util.CrashReporter.handler)
     private val main = Handler(Looper.getMainLooper())
     private val meta = context.getSharedPreferences("nexrify_sync", Context.MODE_PRIVATE)
     private val reloadHooks = mutableListOf<() -> Unit>()
