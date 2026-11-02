@@ -275,6 +275,13 @@ class Strings(val english: Boolean) {
     val likeAction get() = t("Suka", "Like")
     val unlikeAction get() = t("Batal suka", "Unlike")
 
+    // Laporan crash
+    val crashTitle get() = t("Nexrify sempat berhenti", "Nexrify stopped unexpectedly")
+    val crashBody get() = t("Maaf, aplikasi tadi berhenti tiba tiba. Salin atau bagikan laporan ini ke pengembang supaya masalahnya cepat diperbaiki.", "Sorry, the app stopped unexpectedly. Copy or share this report with the developer so it can be fixed quickly.")
+    val crashCopy get() = t("Salin laporan", "Copy report")
+    val crashShare get() = t("Bagikan", "Share")
+    val crashCopied get() = t("Laporan disalin", "Report copied")
+
     // Akun
     val authSubtitle get() = t("Masuk untuk menyimpan favorit, playlist, dan riwayatmu di akunmu.", "Sign in to keep your favorites, playlists, and history with your account.")
     val authLogin get() = t("Masuk", "Sign in")
