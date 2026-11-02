@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 /** Menjaga unduhan tetap jalan saat aplikasi di latar belakang dan menampilkan progresnya di notifikasi. */
 class OfflineDownloadService : Service() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + id.nexrify.music.util.CrashReporter.handler)
     private var job: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
