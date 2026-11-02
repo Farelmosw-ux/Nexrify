@@ -24,6 +24,7 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
         id.nexrify.music.data.account.AccountManager.init(this)
         id.nexrify.music.data.account.AccountSync.init(this).startWatching()
         id.nexrify.music.data.prayer.MaghribManager.init(this)
+        id.nexrify.music.data.prayer.MaghribReminder.init(this)
         id.nexrify.music.data.network.NetworkMonitor.init(this)
         id.nexrify.music.data.download.OfflineManager.init(this)
         id.nexrify.music.data.update.UpdateManager.init(this)
