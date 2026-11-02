@@ -54,6 +54,7 @@ fun TrackItem(
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onMoreClick: (() -> Unit)? = null,
+    onRemoveClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = NexrifyAppTheme.colors
@@ -155,6 +156,23 @@ fun TrackItem(
                 tint = if (track.isFavorite) colors.textPrimary else colors.textMuted,
                 modifier = Modifier.size(22.dp)
             )
+        }
+
+        if (onRemoveClick != null) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onRemoveClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = NexIcons.DeleteOutline,
+                    contentDescription = id.nexrify.music.i18n.currentStrings().removeFromPlaylistCd,
+                    tint = colors.textMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
 
         if (onMoreClick != null) {
