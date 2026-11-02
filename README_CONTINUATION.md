@@ -82,3 +82,8 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - Kotak surat: kirim token supaya surat khusus per pengguna sampai, coba ulang otomatis, detail error ditampilkan di layar kalau gagal, polling tiap 10 menit dan notifikasi surat baru.
 - Dialog: NexDialogCard dan NexConfirmDialog menggantikan AlertDialog polos untuk konfirmasi, bentuk dialog lain diseragamkan.
 - Website: panel dibuat ulang tanpa pop-up bawaan browser (dialog, pemilih tanggal, pilihan, dan unggah file buatan sendiri), tab Pengguna, surat bisa ditujukan ke satu pengguna.
+
+## Revisi 4.0.1: pelapor crash
+- Laporan crash dari HP teman (vivo 1819, Android 11, mode terang): aplikasi mati 1 sampai 2 detik setelah layar Masuk/Daftar tampil, tanpa disentuh. Penyebab belum bisa dipastikan tanpa stack trace.
+- util/CrashReporter.kt: crash yang mematikan aplikasi disimpan ke filesDir/last_crash.txt, lalu CrashReportDialog menampilkannya saat aplikasi dibuka lagi (salin atau bagikan). Kesalahan di scope coroutine tingkat aplikasi (Application, OfflineManager, AccountSync, PlaybackService, OfflineDownloadService) kini dicatat ke non_fatal.txt dan tidak mematikan aplikasi.
+- Kalau aplikasi masih mati sebelum UI tampil: adb logcat -b crash, atau menu pengembang untuk bug report.
