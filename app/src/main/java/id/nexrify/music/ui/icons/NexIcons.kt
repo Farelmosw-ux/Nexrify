@@ -233,4 +233,29 @@ object NexIcons {
             "M4.2 17.5 A9 9 0 1 1 19.8 17.5", "M12 13.5 L16 8.5", circle(12f, 14f, 1.2f)
         )
     }
+    val Send by lazy { icon("Send", "M21 3 L10 14", "M21 3 L14.5 21 L10 14 L3 9.5 Z") }
+    val Reply by lazy { icon("Reply", "M9.5 14.5 L4.5 9.5 L9.5 4.5", "M4.5 9.5 H14 A6 6 0 0 1 20 15.5 V19.5") }
+    val Edit by lazy { icon("Edit", "M4 20 L8.5 19 L19.5 8 A2.1 2.1 0 0 0 16.5 5 L5.5 16 Z", "M14.5 7 L17.5 10") }
+    val Copy by lazy {
+        icon(
+            "Copy",
+            "M10 9 H19 A1 1 0 0 1 20 10 V19 A1 1 0 0 1 19 20 H10 A1 1 0 0 1 9 19 V10 A1 1 0 0 1 10 9 Z",
+            "M6 15 H5 A1 1 0 0 1 4 14 V5 A1 1 0 0 1 5 4 H14 A1 1 0 0 1 15 5 V6"
+        )
+    }
+    val Bell by lazy {
+        icon("Bell", "M6 9 A6 6 0 0 1 18 9 C18 15 20.5 16.5 20.5 16.5 H3.5 C3.5 16.5 6 15 6 9 Z", "M10 20 A2 2 0 0 0 14 20")
+    }
+    val BellOff by lazy {
+        icon("BellOff", "M6 9 A6 6 0 0 1 18 9 C18 15 20.5 16.5 20.5 16.5 H3.5 C3.5 16.5 6 15 6 9 Z", "M10 20 A2 2 0 0 0 14 20", "M4 4 L20 20")
+    }
+    val Flag by lazy { icon("Flag", "M5 21 V4", "M5 4 H17 L14.5 8.5 L17 13 H5") }
+    val Person by lazy { icon("Person", circle(12f, 8f, 4f), "M4 21 C4 16.5 7.5 14 12 14 C16.5 14 20 16.5 20 21") }
+    val Group by lazy {
+        icon(
+            "Group",
+            circle(9f, 8f, 3.5f), "M2.5 20 C2.5 16 5.5 14 9 14 C12.5 14 15.5 16 15.5 20",
+            "M16 4.8 A3.2 3.2 0 0 1 16 11.2", "M18 14.3 C20.2 15 21.5 16.8 21.5 20"
+        )
+    }
 }
