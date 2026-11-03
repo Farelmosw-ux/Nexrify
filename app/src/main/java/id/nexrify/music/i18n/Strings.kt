@@ -647,6 +647,32 @@ class Strings(val english: Boolean) {
     fun chatNotifMore(n: Int) = t("dan $n lainnya", "and $n more")
     val chatOpenChat get() = t("Buka Global Chat", "Open Global Chat")
 
+    // ===== Pesan langsung (DM) =====
+    val dmTitle get() = t("Pesan", "Messages")
+    val dmEmptyTitle get() = t("Belum ada pesan", "No messages yet")
+    val dmEmptySub get() = t("Cari teman lewat username lalu kirim pesan langsung.", "Find a friend by username and send a direct message.")
+    val dmNewMessage get() = t("Pesan baru", "New message")
+    val dmYou get() = t("Kamu", "You")
+    val dmTyping get() = t("sedang mengetik…", "typing…")
+    val dmRead get() = t("Dibaca", "Read")
+    val dmSendMessage get() = t("Kirim pesan", "Send message")
+    val dmBlockUser get() = t("Blokir pengguna", "Block user")
+    val dmUnblockUser get() = t("Buka blokir", "Unblock")
+    val dmBlockedBanner get() = t("Kamu memblokir pengguna ini", "You blocked this user")
+    val dmBlockedDone get() = t("Pengguna diblokir. Dia tidak bisa mengirim pesan langsung kepadamu.", "User blocked. They can no longer send you direct messages.")
+    val dmUnblockedDone get() = t("Blokir dibuka", "User unblocked")
+    val dmErrBlocked get() = t("Pengguna ini tidak menerima pesan darimu", "This user does not accept messages from you")
+    val dmErrYouBlocked get() = t("Kamu memblokir pengguna ini. Buka blokirnya dulu.", "You blocked this user. Unblock them first.")
+    val dmLoadFailed get() = t("Tidak bisa memuat percakapan", "Could not load the conversation")
+    val dmStartHint get() = t("Mulai percakapan dengan menulis pesan pertama.", "Start the conversation by writing the first message.")
+    val dmOpenMessages get() = t("Buka pesan", "Open messages")
+    fun dmNotifTitle(from: String) = t("$from mengirim pesan", "$from sent you a message")
+    val dmNotifTitleMany get() = t("Pesan langsung baru", "New direct messages")
+    val chatNotifChannelDm get() = t("Pesan langsung", "Direct messages")
+    val chatNotifDm get() = t("Pesan langsung", "Direct messages")
+    val chatNotifDmSub get() = t("Saat seseorang mengirim pesan langsung kepadamu", "When someone sends you a direct message")
+    val dmMore get() = t("Lainnya", "More")
+
 }
 
 val LocalStrings = staticCompositionLocalOf { Strings(false) }
