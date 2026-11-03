@@ -278,6 +278,8 @@ fun MainAppScreen(viewModel: MusicViewModel) {
     }
 
     val currentTrack by viewModel.currentTrack.collectAsState()
+    // Mini player yang ditutup pengguna: disembunyikan untuk lagu ini, muncul lagi saat lagu berganti.
+    var dismissedTrackId by remember { mutableStateOf<String?>(null) }
     val isPlaying by viewModel.isPlaying.collectAsState()
     val isLoadingTrack by viewModel.isLoadingTrack.collectAsState()
     val isExpanded by viewModel.isPlayerExpanded.collectAsState()
@@ -371,7 +373,9 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                 NavHost(
                     navController = navController,
                     startDestination = Screen.Home.route,
-                    modifier = Modifier.weight(1f).fillMaxWidth()
+                    modifier = Modifier.weight(1f).fillMaxWidth().padding(
+                        bottom = if (currentRoute?.startsWith("chat") == true && currentTrack != null && !isExpanded && currentTrack!!.id != dismissedTrackId) 84.dp else 0.dp
+                    )
                 ) {
                     composable(Screen.Home.route) {
                         HomeScreen(
@@ -413,12 +417,13 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                 }
 
                 // Floating MiniPlayer above bottom nav bar
-                if (currentTrack != null && !isExpanded) {
+                if (currentTrack != null && !isExpanded && currentTrack!!.id != dismissedTrackId) {
                     MiniPlayerContainer(
                         viewModel = viewModel,
                         track = currentTrack!!,
                         isPlaying = isPlaying,
                         isLoading = isLoadingTrack,
+                        onDismiss = { dismissedTrackId = currentTrack?.id },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 8.dp)
@@ -460,6 +465,7 @@ fun MiniPlayerContainer(
     track: Track,
     isPlaying: Boolean,
     isLoading: Boolean,
+    onDismiss: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val currentPosMs by viewModel.playbackPosition.collectAsState()
@@ -475,6 +481,7 @@ fun MiniPlayerContainer(
         onPlayPauseClick = { viewModel.togglePlayPause() },
         onSkipNextClick = { viewModel.skipNext() },
         onClick = { viewModel.expandPlayer(true) },
+        onDismiss = onDismiss,
         modifier = modifier
     )
 }
