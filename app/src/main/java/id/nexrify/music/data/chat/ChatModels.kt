@@ -40,7 +40,8 @@ data class ChatProfile(
     val liked: Int,
     val playlists: Int,
     val top: List<ChatTopTrack>,
-    val badges: List<String>
+    val badges: List<String>,
+    val blockedByMe: Boolean = false
 )
 
 data class ChatUserHit(val username: String, val uid: String, val display: String)
@@ -55,3 +56,35 @@ data class ChatFeed(val ev: Long, val reset: Boolean, val typing: List<String>, 
 
 val CHAT_EMOJIS = listOf("❤️", "😂", "🔥", "🎵", "👍")
 const val CHAT_MAX_LENGTH = 500
+
+/* ---------------- pesan langsung (DM) ---------------- */
+
+data class DmReply(val seq: Long, val uid: String, val text: String)
+
+data class DmMessage(
+    val seq: Long,
+    val uid: String,
+    val text: String,
+    val ts: Long,
+    val edited: Long,
+    val deleted: Boolean,
+    val ev: Long,
+    val reply: DmReply?,
+    val status: SendStatus = SendStatus.SENT,
+    val localId: String? = null
+)
+
+data class DmPeer(val uid: String, val username: String, val display: String, val av: String)
+
+data class DmConversation(
+    val uid: String,
+    val username: String,
+    val display: String,
+    val av: String,
+    val last: String,
+    val ts: Long,
+    val unread: Int,
+    val fromMe: Boolean
+)
+
+data class DmThreadData(val peer: DmPeer, val messages: List<DmMessage>, val typing: Boolean, val peerRead: Long, val blocked: Boolean, val ev: Long)
