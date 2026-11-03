@@ -81,6 +81,7 @@ import id.nexrify.music.viewmodel.MusicViewModel
 fun HomeScreen(
     viewModel: MusicViewModel,
     onOpenMailbox: () -> Unit = {},
+    onOpenChat: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val homeSections by viewModel.homeSections.collectAsState()
@@ -153,6 +154,9 @@ fun HomeScreen(
                 }
             }
             val unreadMail by id.nexrify.music.data.mailbox.MailboxManager.getInstance().unreadCount.collectAsState()
+            val chatUnread by id.nexrify.music.data.chat.ChatManager.getInstance().mentionUnread.collectAsState()
+            ChatTopButton(unread = chatUnread, onClick = onOpenChat)
+            Spacer(modifier = Modifier.width(10.dp))
             MailboxTopButton(unread = unreadMail, onClick = onOpenMailbox)
             Spacer(modifier = Modifier.width(10.dp))
             AccountTopButton(account = currentAccount, onClick = { showProfileMenu = true })
@@ -707,6 +711,42 @@ private fun PickBanner(
                 tint = PureBlack,
                 modifier = Modifier.size(26.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun ChatTopButton(unread: Int, onClick: () -> Unit) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(colors.card)
+                .border(1.dp, colors.border, CircleShape)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(NexIcons.Group, S.chatOpenChat, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
+        }
+        if (unread > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .clip(CircleShape)
+                    .background(colors.accent)
+                    .border(2.dp, colors.background, CircleShape)
+                    .padding(horizontal = 5.dp, vertical = 1.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (unread > 9) "9+" else unread.toString(),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.background
+                )
+            }
         }
     }
 }
