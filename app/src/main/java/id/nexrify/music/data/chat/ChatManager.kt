@@ -30,6 +30,8 @@ enum class ChatConnection { CONNECTING, ONLINE, OFFLINE }
 /** Permintaan membuka Global Chat dari luar (notifikasi HP). seq > 0 berarti sorot pesan itu. */
 object ChatNav {
     val request = MutableStateFlow<Long?>(null)
+    /** Buka DM dari notifikasi: username lawan bicara, atau string kosong untuk daftar pesan. */
+    val dmRequest = MutableStateFlow<String?>(null)
 }
 
 /**
@@ -363,15 +365,19 @@ class ChatManager private constructor(private val context: Context) {
         if (items.isEmpty()) return
         val me = myName()
         val muted = settings.muted.value
-        val relevant = items.filter { it.from.lowercase() !in muted && !it.from.equals(me, true) || it.kind == "a" }
+        val dms = DmManager.getInstance()
+        val openDm = dms.openUsername()
+        val relevant = items.filter { (it.from.lowercase() !in muted && !it.from.equals(me, true)) || it.kind == "a" }
         _mentionUnread.update { it + relevant.count { n -> n.kind == "m" || n.kind == "r" } }
-        if (isActive || !settings.notifAll.value) return
+        dms.refreshInbox()
+        if (!settings.notifAll.value) return
         val allowed = relevant.filter {
             when (it.kind) {
-                "m" -> settings.notifMention.value
-                "r" -> settings.notifReply.value
-                "x" -> settings.notifReaction.value
-                "a" -> settings.notifAnnounce.value
+                "m" -> settings.notifMention.value && !isActive
+                "r" -> settings.notifReply.value && !isActive
+                "x" -> settings.notifReaction.value && !isActive
+                "a" -> settings.notifAnnounce.value && !isActive
+                "d" -> settings.notifDm.value && !it.from.equals(openDm, true)
                 else -> false
             }
         }
