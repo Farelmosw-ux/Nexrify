@@ -101,7 +101,8 @@ object ChatApi {
             top = buildList {
                 if (top != null) for (i in 0 until top.length()) top.optJSONObject(i)?.let { add(ChatTopTrack(it.optString("t"), it.optString("a"))) }
             },
-            badges = o.optJSONArray("badges").toStringList()
+            badges = o.optJSONArray("badges").toStringList(),
+            blockedByMe = o.optBoolean("blockedByMe", false)
         )
     }
 
@@ -118,6 +119,43 @@ object ChatApi {
             announce = o.optBoolean("announce"), mentions = o.optJSONArray("mentions").toStringList(),
             reply = r?.let { ChatReply(it.optLong("seq"), it.optString("username"), it.optString("text")) },
             reactions = reactions
+        )
+    }
+
+    suspend fun dmInbox(token: String): Pair<Int, List<DmConversation>> {
+        val j = get(token, mapOf("dminbox" to "1"))
+        val arr = j.optJSONArray("conversations") ?: JSONArray()
+        val list = buildList {
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                add(
+                    DmConversation(
+                        o.optString("uid"), o.optString("username"), o.optString("display"), o.optString("av"),
+                        o.optString("last"), o.optLong("ts"), o.optInt("unread"), o.optBoolean("fromMe")
+                    )
+                )
+            }
+        }
+        return j.optInt("unread") to list
+    }
+
+    suspend fun dmThread(token: String, uid: String, after: Long): DmThreadData {
+        val j = get(token, mapOf("dm" to uid, "after" to after.toString()))
+        val p = j.getJSONObject("peer")
+        val arr = j.optJSONArray("messages") ?: JSONArray()
+        return DmThreadData(
+            peer = DmPeer(p.optString("id"), p.optString("username"), p.optString("display"), p.optString("av")),
+            messages = buildList { for (i in 0 until arr.length()) arr.optJSONObject(i)?.let { add(parseDm(it)) } },
+            typing = j.optBoolean("typing"), peerRead = j.optLong("peerRead"), blocked = j.optBoolean("blocked"), ev = j.optLong("ev", after)
+        )
+    }
+
+    fun parseDm(o: JSONObject): DmMessage {
+        val r = o.optJSONObject("reply")
+        return DmMessage(
+            seq = o.optLong("seq"), uid = o.optString("uid"), text = o.optString("text"), ts = o.optLong("ts"),
+            edited = o.optLong("edited"), deleted = o.optBoolean("deleted"), ev = o.optLong("ev"),
+            reply = r?.let { DmReply(it.optLong("seq"), it.optString("uid"), it.optString("text")) }
         )
     }
 
