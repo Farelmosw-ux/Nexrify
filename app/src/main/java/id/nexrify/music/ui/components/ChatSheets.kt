@@ -56,6 +56,7 @@ import id.nexrify.music.data.chat.ChatMessage
 import id.nexrify.music.data.chat.ChatProfile
 import id.nexrify.music.data.chat.ChatUserHit
 import id.nexrify.music.i18n.S
+import id.nexrify.music.i18n.currentStrings
 import id.nexrify.music.ui.icons.NexIcons
 import id.nexrify.music.ui.theme.NexrifyAppTheme
 import id.nexrify.music.ui.theme.Typography
@@ -259,11 +260,12 @@ fun ChatProfileSheet(
                                     saving = true
                                     val ok = manager.updateProfile(bio, status)
                                     saving = false
+                                    val st = currentStrings()
                                     if (ok) {
-                                        NexNotifier.success(S.chatProfileSaved, S.chatProfileTitle)
+                                        NexNotifier.success(st.chatProfileSaved, st.chatProfileTitle)
                                         profile = manager.profile(username) ?: profile
                                         editing = false
-                                    } else NexNotifier.error(S.chatGenericError, S.chatProfileTitle)
+                                    } else NexNotifier.error(st.chatGenericError, st.chatProfileTitle)
                                 }
                             }
                             PillButton(S.cancel, filled = false, modifier = Modifier.weight(1f)) { editing = false }
