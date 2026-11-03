@@ -15,6 +15,8 @@ import id.nexrify.music.i18n.currentStrings
 object ChatNotifier {
     const val EXTRA_OPEN_CHAT = "nexrify.open_chat"
     const val EXTRA_SEQ = "nexrify.chat_seq"
+    const val EXTRA_OPEN_DM = "nexrify.open_dm"
+    const val EXTRA_PEER = "nexrify.dm_peer"
 
     private data class Kind(val code: String, val channel: String, val id: Int)
 
@@ -22,7 +24,8 @@ object ChatNotifier {
         Kind("m", "chat_mention", 4101),
         Kind("r", "chat_reply", 4102),
         Kind("x", "chat_reaction", 4103),
-        Kind("a", "chat_announce", 4104)
+        Kind("a", "chat_announce", 4104),
+        Kind("d", "chat_dm", 4105)
     )
 
     fun show(context: Context, items: List<ChatNotif>) {
@@ -38,6 +41,7 @@ object ChatNotifier {
             val channelName = when (kind.code) {
                 "m" -> s.chatNotifChannelMention
                 "r" -> s.chatNotifChannelReply
+                "d" -> s.chatNotifChannelDm
                 "x" -> s.chatNotifChannelReaction
                 else -> s.chatNotifChannelAnnounce
             }
@@ -48,6 +52,7 @@ object ChatNotifier {
                 "m" -> s.chatNotifMentionTitle(last.from)
                 "r" -> s.chatNotifReplyTitle(last.from)
                 "x" -> s.chatNotifReactionTitle(last.from)
+                "d" -> if (group.map { it.from }.distinct().size > 1) s.dmNotifTitleMany else s.dmNotifTitle(last.from)
                 else -> s.chatNotifAnnounceTitle
             }
             val body = when (kind.code) {
@@ -55,14 +60,14 @@ object ChatNotifier {
                 else -> last.text
             }
             val more = if (group.size > 1) "\n" + s.chatNotifMore(group.size - 1) else ""
-            val open = PendingIntent.getActivity(
-                context, kind.id,
-                Intent(context, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    .putExtra(EXTRA_OPEN_CHAT, true)
-                    .putExtra(EXTRA_SEQ, last.seq),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
+            val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            if (kind.code == "d") {
+                val sameSender = group.map { it.from }.distinct().size == 1
+                intent.putExtra(EXTRA_OPEN_DM, true).putExtra(EXTRA_PEER, if (sameSender) last.from else "")
+            } else {
+                intent.putExtra(EXTRA_OPEN_CHAT, true).putExtra(EXTRA_SEQ, last.seq)
+            }
+            val open = PendingIntent.getActivity(context, kind.id, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             val n = NotificationCompat.Builder(context, kind.channel)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
