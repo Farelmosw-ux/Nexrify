@@ -123,8 +123,22 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 
+    private fun handleChatIntent(intent: android.content.Intent?) {
+        if (intent?.getBooleanExtra(id.nexrify.music.data.chat.ChatNotifier.EXTRA_OPEN_CHAT, false) == true) {
+            id.nexrify.music.data.chat.ChatNav.request.value = intent.getLongExtra(id.nexrify.music.data.chat.ChatNotifier.EXTRA_SEQ, 0L)
+            intent.removeExtra(id.nexrify.music.data.chat.ChatNotifier.EXTRA_OPEN_CHAT)
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleChatIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleChatIntent(intent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -141,7 +155,17 @@ class MainActivity : ComponentActivity() {
             val appContext = androidx.compose.ui.platform.LocalContext.current
             val updateManager = remember { UpdateManager.getInstance() }
             val availableUpdate by updateManager.available.collectAsState()
-            LaunchedEffect(Unit) {
+            // Naik setiap aplikasi kembali ke depan, supaya rilis baru (terutama yang wajib) terdeteksi lagi.
+            var resumeTick by remember { mutableStateOf(0) }
+            androidx.compose.runtime.DisposableEffect(appContext) {
+                val owner = appContext as? androidx.lifecycle.LifecycleOwner
+                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) resumeTick++
+                }
+                owner?.lifecycle?.addObserver(observer)
+                onDispose { owner?.lifecycle?.removeObserver(observer) }
+            }
+            LaunchedEffect(resumeTick) {
                 // Deteksi rilis baru dan ambil kotak surat lewat website Nexrify.
                 updateManager.checkOnLaunch()
                 MailboxManager.getInstance().refresh()
@@ -244,6 +268,14 @@ fun MainAppScreen(viewModel: MusicViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Dibuka dari notifikasi Global Chat: pindah ke layar chat dan sorot pesannya.
+    val chatRequest by id.nexrify.music.data.chat.ChatNav.request.collectAsState()
+    LaunchedEffect(chatRequest) {
+        val seq = chatRequest ?: return@LaunchedEffect
+        id.nexrify.music.data.chat.ChatNav.request.value = null
+        if (id.nexrify.music.data.account.AccountManager.getInstance().isLoggedIn()) navController.navigate("chat?seq=$seq") { launchSingleTop = true }
+    }
+
     val currentTrack by viewModel.currentTrack.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
     val isLoadingTrack by viewModel.isLoadingTrack.collectAsState()
@@ -261,7 +293,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
         Scaffold(
             containerColor = colors.background,
             bottomBar = {
-                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox") NavigationBar(
+                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute?.startsWith("chat") != true) NavigationBar(
                     containerColor = colors.background,
                     tonalElevation = 0.dp
                 ) {
@@ -343,11 +375,22 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                     composable(Screen.Home.route) {
                         HomeScreen(
                             viewModel = viewModel,
-                            onOpenMailbox = { navController.navigate("mailbox") }
+                            onOpenMailbox = { navController.navigate("mailbox") },
+                            onOpenChat = { navController.navigate("chat?seq=0") }
                         )
                     }
                     composable("mailbox") {
                         MailboxScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable(
+                        route = "chat?seq={seq}",
+                        arguments = listOf(navArgument("seq") { type = NavType.LongType; defaultValue = 0L })
+                    ) { entry ->
+                        id.nexrify.music.ui.screens.ChatScreen(
+                            viewModel = viewModel,
+                            highlightSeq = entry.arguments?.getLong("seq") ?: 0L,
+                            onBack = { navController.popBackStack() }
+                        )
                     }
                     composable(Screen.Search.route) {
                         SearchScreen(onOpenSearchPage = { q -> navController.navigate(Screen.SearchPage.route(q)) })
