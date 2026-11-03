@@ -29,6 +29,7 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
         id.nexrify.music.data.download.OfflineManager.init(this)
         id.nexrify.music.data.update.UpdateManager.init(this)
         id.nexrify.music.data.mailbox.MailboxManager.init(this)
+        id.nexrify.music.data.chat.ChatManager.init(this)
 
         // Cek kotak surat tiap 10 menit selama proses hidup (musik diputar atau aplikasi dibuka) dan beri notifikasi surat baru.
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO + id.nexrify.music.util.CrashReporter.handler).launch {
@@ -45,6 +46,22 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
                     id.nexrify.music.util.CrashReporter.logNonFatal(e)
                 }
                 kotlinx.coroutines.delay(10 * 60_000L)
+            }
+        }
+
+        // Cek mention, balasan, reaksi, dan pengumuman Global Chat tiap 2 menit selama proses hidup (aplikasi dibuka atau musik diputar).
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO + id.nexrify.music.util.CrashReporter.handler).launch {
+            while (true) {
+                try {
+                    if (id.nexrify.music.data.account.AccountManager.getInstance().isLoggedIn()) {
+                        id.nexrify.music.data.chat.ChatManager.getInstance().checkNotifications()
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    id.nexrify.music.util.CrashReporter.logNonFatal(e)
+                }
+                kotlinx.coroutines.delay(2 * 60_000L)
             }
         }
         id.nexrify.music.data.settings.SettingsManager.init(this)
