@@ -102,6 +102,7 @@ import id.nexrify.music.ui.theme.NexrifyTheme
 import id.nexrify.music.ui.theme.MutedText
 import id.nexrify.music.ui.theme.PureBlack
 import id.nexrify.music.ui.theme.PureWhite
+import id.nexrify.music.ui.screens.ChatScreen
 import id.nexrify.music.viewmodel.MusicViewModel
 
 class MainActivity : ComponentActivity() {
@@ -386,7 +387,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                         route = "chat?seq={seq}",
                         arguments = listOf(navArgument("seq") { type = NavType.LongType; defaultValue = 0L })
                     ) { entry ->
-                        id.nexrify.music.ui.screens.ChatScreen(
+                        ChatScreen(
                             viewModel = viewModel,
                             highlightSeq = entry.arguments?.getLong("seq") ?: 0L,
                             onBack = { navController.popBackStack() }
