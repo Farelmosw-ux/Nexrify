@@ -30,6 +30,7 @@ class NexrifyApplication : Application(), ImageLoaderFactory, androidx.lifecycle
         id.nexrify.music.data.update.UpdateManager.init(this)
         id.nexrify.music.data.mailbox.MailboxManager.init(this)
         id.nexrify.music.data.chat.ChatManager.init(this)
+        id.nexrify.music.data.chat.DmManager.init(this)
 
         // Cek kotak surat tiap 10 menit selama proses hidup (musik diputar atau aplikasi dibuka) dan beri notifikasi surat baru.
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO + id.nexrify.music.util.CrashReporter.handler).launch {
