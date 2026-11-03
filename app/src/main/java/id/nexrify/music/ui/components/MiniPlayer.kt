@@ -51,6 +51,7 @@ fun MiniPlayer(
     onPlayPauseClick: () -> Unit,
     onSkipNextClick: () -> Unit,
     onClick: () -> Unit,
+    onDismiss: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
@@ -146,6 +147,18 @@ fun MiniPlayer(
                     tint = colors.textPrimary,
                     modifier = Modifier.size(24.dp)
                 )
+            }
+
+            // Tutup mini player (musik tetap jalan). Muncul lagi otomatis saat lagu berganti.
+            if (onDismiss != null) {
+                IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = id.nexrify.music.ui.icons.NexIcons.KeyboardArrowDown,
+                        contentDescription = S.cd("Collapse"),
+                        tint = colors.textMuted,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }
