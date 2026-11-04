@@ -54,7 +54,7 @@ data class ChatNotif(val kind: String, val seq: Long, val from: String, val text
 
 data class ChatFeed(val ev: Long, val reset: Boolean, val typing: List<String>, val messages: List<ChatMessage>)
 
-val CHAT_EMOJIS = listOf("❤️", "😂", "🔥", "🎵", "👍")
+val CHAT_EMOJIS = listOf("👍", "😂", "😮", "😭", "🙏", "😁", "😡", "❌", "✅", "❤️", "🗿")
 const val CHAT_MAX_LENGTH = 500
 
 /* ---------------- pesan langsung (DM) ---------------- */
@@ -88,3 +88,17 @@ data class DmConversation(
 )
 
 data class DmThreadData(val peer: DmPeer, val messages: List<DmMessage>, val typing: Boolean, val peerRead: Long, val blocked: Boolean, val ev: Long)
+
+/** Info grup Global Chat. myRole: "admin", "staff", atau kosong. */
+data class ChatGroup(
+    val name: String,
+    val desc: String,
+    val photoV: String,
+    val hasPhoto: Boolean,
+    val members: Int,
+    val online: Int,
+    val myRole: String,
+    val canEdit: Boolean
+)
+
+data class ChatMember(val uid: String, val username: String, val display: String, val role: String, val online: Boolean)
