@@ -62,6 +62,11 @@ class ChatManager private constructor(private val context: Context) {
     val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
     private val _me = MutableStateFlow<ChatProfile?>(null)
     val me: StateFlow<ChatProfile?> = _me.asStateFlow()
+    private val _group = MutableStateFlow<ChatGroup?>(null)
+    /** Info grup: nama, foto, jumlah anggota dan yang online. */
+    val group: StateFlow<ChatGroup?> = _group.asStateFlow()
+    private val _members = MutableStateFlow<List<ChatMember>>(emptyList())
+    val members: StateFlow<List<ChatMember>> = _members.asStateFlow()
     private val _mentionUnread = MutableStateFlow(0)
     /** Jumlah mention/balasan yang belum dilihat (badge di tombol chat). */
     val mentionUnread: StateFlow<Int> = _mentionUnread.asStateFlow()
@@ -79,6 +84,7 @@ class ChatManager private constructor(private val context: Context) {
     private var pollJob: Job? = null
     private val wake = Channel<Unit>(Channel.CONFLATED)
     private var lastTypingSent = 0L
+    @Volatile private var joinedOnce = false
 
     private fun token(): String? = AccountManager.getInstance().token()
     private fun myName(): String = AccountManager.getInstance().user.value?.username.orEmpty()
@@ -91,7 +97,7 @@ class ChatManager private constructor(private val context: Context) {
         isActive = active
         if (active) {
             _mentionUnread.value = 0
-            scope.launch { runCatching { join() } }
+            scope.launch { runCatching { join() }; refreshGroup() }
             pollJob?.cancel()
             pollJob = scope.launch { pollLoop() }
         } else {
@@ -106,6 +112,7 @@ class ChatManager private constructor(private val context: Context) {
     private suspend fun pollLoop() {
         var idle = 0
         var failures = 0
+        var pollCount = 0
         while (isActive) {
             val t = token() ?: break
             var changed = false
@@ -127,6 +134,7 @@ class ChatManager private constructor(private val context: Context) {
                 CrashReporter.logNonFatal(e)
             }
             idle = if (changed) 0 else idle + 1
+            if (++pollCount % 10 == 0) refreshGroup()
             val wait = when {
                 failures > 0 -> minOf(30_000L, 3_000L * failures)
                 idle < 8 -> 3_000L
@@ -294,6 +302,38 @@ class ChatManager private constructor(private val context: Context) {
         scope.launch { runCatching { token()?.let { ChatApi.post(it, JSONObject().put("action", "typing")) } } }
     }
 
+    /* ---------------- info grup dan anggota ---------------- */
+
+    suspend fun refreshGroup() {
+        val t = token() ?: return
+        try { _group.value = ChatApi.group(t) } catch (e: CancellationException) { throw e } catch (_: Throwable) {}
+    }
+
+    suspend fun refreshMembers() {
+        val t = token() ?: return
+        try { _members.value = ChatApi.members(t) } catch (e: CancellationException) { throw e } catch (_: Throwable) {}
+    }
+
+    /** Hanya admin dan staf. Nilai null = tidak diubah. photo "" = hapus foto. */
+    suspend fun updateGroup(name: String?, desc: String?, photoDataUrl: String?): Boolean {
+        val t = token() ?: return false
+        return try {
+            val body = JSONObject().put("action", "group_update")
+            if (name != null) body.put("name", name)
+            if (desc != null) body.put("desc", desc)
+            if (photoDataUrl != null) body.put("photo", photoDataUrl)
+            _group.value = ChatApi.parseGroup(ChatApi.post(t, body).getJSONObject("group"))
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AccountError) {
+            _errors.tryEmit(e.code)
+            false
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     /* ---------------- profil dan pencarian ---------------- */
 
     suspend fun join(): ChatProfile? {
@@ -358,6 +398,7 @@ class ChatManager private constructor(private val context: Context) {
      */
     suspend fun checkNotifications() {
         val t = token() ?: return
+        if (!joinedOnce) { joinedOnce = true; runCatching { join() } }
         val since = settings.lastNotifTs
         val (now, items) = ChatApi.notifs(t, since)
         settings.lastNotifTs = now
