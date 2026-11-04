@@ -66,6 +66,8 @@ import id.nexrify.music.i18n.currentStrings
 import id.nexrify.music.ui.components.ChatAvatar
 import id.nexrify.music.ui.components.ChatBubble
 import id.nexrify.music.ui.components.ChatDateHeader
+import id.nexrify.music.ui.components.ChatGroupSheet
+import id.nexrify.music.ui.components.GroupAvatar
 import id.nexrify.music.ui.components.ChatDeleteDialog
 import id.nexrify.music.ui.components.ChatMessageMenu
 import id.nexrify.music.ui.components.ChatProfileSheet
@@ -141,6 +143,8 @@ fun ChatScreen(viewModel: MusicViewModel, highlightSeq: Long, onBack: () -> Unit
     var profileName by remember { mutableStateOf<String?>(null) }
     var showSearch by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    var showGroup by remember { mutableStateOf(false) }
+    val group by manager.group.collectAsState()
     var highlighted by remember { mutableStateOf<Long?>(null) }
     var unseen by remember { mutableStateOf(0) }
     var lastToast by remember { mutableStateOf(0L) }
@@ -289,26 +293,34 @@ fun ChatScreen(viewModel: MusicViewModel, highlightSeq: Long, onBack: () -> Unit
         // ---- header ----
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             HeaderIcon(NexIcons.ArrowBack, onClick = onBack)
-            Column(Modifier.weight(1f).padding(horizontal = 6.dp)) {
-                Text(S.chatTitle, style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
-                val sub = when {
-                    typing.isNotEmpty() -> when (typing.size) {
-                        1 -> S.chatTypingOne(typing[0])
-                        2 -> S.chatTypingTwo(typing[0], typing[1])
-                        else -> S.chatTypingMany(typing.size)
+            Row(
+                Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { showGroup = true }.padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                GroupAvatar(group?.photoV.orEmpty(), group?.hasPhoto == true, 38.dp)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(group?.name ?: S.chatTitle, style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val sub = when {
+                        typing.isNotEmpty() -> when (typing.size) {
+                            1 -> S.chatTypingOne(typing[0])
+                            2 -> S.chatTypingTwo(typing[0], typing[1])
+                            else -> S.chatTypingMany(typing.size)
+                        }
+                        connection == ChatConnection.OFFLINE -> S.chatOffline
+                        connection == ChatConnection.CONNECTING && !loaded -> S.chatConnecting
+                        group != null -> S.chatMembersOnline(group!!.members, group!!.online)
+                        else -> S.chatSubtitle
                     }
-                    connection == ChatConnection.OFFLINE -> S.chatOffline
-                    connection == ChatConnection.CONNECTING && !loaded -> S.chatConnecting
-                    else -> S.chatSubtitle
+                    Text(
+                        sub,
+                        fontSize = 12.sp,
+                        color = if (typing.isNotEmpty()) colors.textPrimary else colors.textMuted,
+                        fontWeight = if (typing.isNotEmpty()) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-                Text(
-                    sub,
-                    fontSize = 12.sp,
-                    color = if (typing.isNotEmpty()) colors.textPrimary else colors.textMuted,
-                    fontWeight = if (typing.isNotEmpty()) FontWeight.SemiBold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
             HeaderIcon(NexIcons.Search) { showSearch = true }
             HeaderIcon(NexIcons.Settings) { showSettings = true }
@@ -361,7 +373,12 @@ fun ChatScreen(viewModel: MusicViewModel, highlightSeq: Long, onBack: () -> Unit
                                     onReplyClick = { jumpTo(it) },
                                     onAvatarClick = { if (!m.announce) profileName = m.username },
                                     onReactionClick = { manager.react(m.seq, it) },
-                                    onRetry = { m.localId?.let { id -> manager.retry(id) } }
+                                    onRetry = { m.localId?.let { id -> manager.retry(id) } },
+                                    onSwipeReply = {
+                                        if (editing != null) input = TextFieldValue("")
+                                        editing = null
+                                        replyTo = m
+                                    }
                                 )
                             }
                         }
@@ -553,6 +570,7 @@ fun ChatScreen(viewModel: MusicViewModel, highlightSeq: Long, onBack: () -> Unit
     }
     if (showSearch) ChatSearchSheet(onOpenProfile = { showSearch = false; profileName = it }, onDismiss = { showSearch = false })
     if (showSettings) ChatSettingsSheet(onDismiss = { showSettings = false })
+    if (showGroup) ChatGroupSheet(onOpenProfile = { showGroup = false; profileName = it }, onDismiss = { showGroup = false })
 }
 
 @Composable
