@@ -41,7 +41,8 @@ data class ChatProfile(
     val playlists: Int,
     val top: List<ChatTopTrack>,
     val badges: List<String>,
-    val blockedByMe: Boolean = false
+    val blockedByMe: Boolean = false,
+    val online: Boolean = false
 )
 
 data class ChatUserHit(val username: String, val uid: String, val display: String)
