@@ -121,7 +121,8 @@ object ChatApi {
                 if (top != null) for (i in 0 until top.length()) top.optJSONObject(i)?.let { add(ChatTopTrack(it.optString("t"), it.optString("a"))) }
             },
             badges = o.optJSONArray("badges").toStringList(),
-            blockedByMe = o.optBoolean("blockedByMe", false)
+            blockedByMe = o.optBoolean("blockedByMe", false),
+            online = o.optBoolean("online", false)
         )
     }
 
