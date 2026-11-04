@@ -26,6 +26,16 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -82,6 +92,7 @@ fun chatJoinedLabel(ts: Long): String =
     if (ts <= 0) "-" else SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(ts))
 
 fun badgeShort(code: String): String = when (code) {
+    "admin" -> "ADMIN"
     "staff" -> "STAF"
     "early" -> "OG"
     "active" -> "AKTIF"
@@ -90,6 +101,7 @@ fun badgeShort(code: String): String = when (code) {
 }
 
 fun badgeFull(code: String, s: Strings): String = when (code) {
+    "admin" -> s.chatBadgeAdmin
     "staff" -> s.chatBadgeStaff
     "early" -> s.chatBadgeEarly
     "active" -> s.chatBadgeActive
@@ -146,19 +158,57 @@ fun ChatAvatar(uid: String, av: String, name: String, size: androidx.compose.ui.
 @Composable
 fun BadgeChip(code: String) {
     val colors = NexrifyAppTheme.colors
-    val filled = code == "staff"
+    val filled = code == "staff" || code == "admin"
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(if (filled) colors.textPrimary else colors.border)
+            .background(if (code == "admin") Color(0xFFF5B83D) else if (filled) colors.textPrimary else colors.border)
             .padding(horizontal = 5.dp, vertical = 1.dp)
     ) {
         Text(
             text = badgeShort(code),
             fontSize = 8.5.sp,
             fontWeight = FontWeight.Bold,
-            color = if (filled) colors.background else colors.textSecondary
+            color = if (code == "admin") Color(0xFF111111) else if (filled) colors.background else colors.textSecondary
         )
+    }
+}
+
+/** Foto grup (atau ikon grup kalau belum ada foto). */
+@Composable
+fun GroupAvatar(photoV: String, hasPhoto: Boolean, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    val colors = NexrifyAppTheme.colors
+    Box(
+        modifier = modifier.size(size).clip(CircleShape).background(colors.card).border(1.dp, colors.border, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(NexIcons.Group, null, tint = colors.textPrimary, modifier = Modifier.size(size * 0.5f))
+        if (hasPhoto) {
+            AsyncImage(
+                model = ChatApi.groupPhotoUrl(photoV),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(size)
+            )
+        }
+    }
+}
+
+/** Tag ONLINE / OFFLINE. */
+@Composable
+fun PresenceTag(online: Boolean) {
+    val colors = NexrifyAppTheme.colors
+    val tone = if (online) Color(0xFF3DDC84) else colors.textMuted
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(tone.copy(alpha = 0.14f))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(6.dp).clip(CircleShape).background(tone))
+        Spacer(Modifier.width(4.dp))
+        Text(if (online) S.chatOnline else S.chatOffline2, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = tone)
     }
 }
 
@@ -177,7 +227,8 @@ fun ChatBubble(
     onReplyClick: (Long) -> Unit,
     onAvatarClick: () -> Unit,
     onReactionClick: (String) -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onSwipeReply: () -> Unit = {}
 ) {
     val colors = NexrifyAppTheme.colors
     val haptic = LocalHapticFeedback.current
@@ -201,10 +252,57 @@ fun ChatBubble(
     val shape = if (mine) RoundedCornerShape(18.dp, 18.dp, 4.dp, 18.dp)
     else RoundedCornerShape(if (showHeader) 4.dp else 18.dp, 18.dp, 18.dp, 18.dp)
 
-    Row(
+    // Tarik pesan sedikit ke kanan untuk membalas (seperti di WhatsApp).
+    val canSwipe = !msg.deleted && msg.status == SendStatus.SENT && msg.seq > 0
+    val swipe = remember { Animatable(0f) }
+    val swipeScope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val maxPull = with(density) { 56.dp.toPx() }
+    val trigger = with(density) { 36.dp.toPx() }
+    val progress = (swipe.value / trigger).coerceIn(0f, 1f)
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(flash)
+            .then(
+                if (canSwipe) Modifier.pointerInput(msg.seq) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, amount ->
+                            change.consume()
+                            swipeScope.launch { swipe.snapTo((swipe.value + amount * 0.7f).coerceIn(0f, maxPull)) }
+                        },
+                        onDragEnd = {
+                            if (swipe.value >= trigger) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onSwipeReply()
+                            }
+                            swipeScope.launch { swipe.animateTo(0f) }
+                        },
+                        onDragCancel = { swipeScope.launch { swipe.animateTo(0f) } }
+                    )
+                } else Modifier
+            )
+    ) {
+        if (canSwipe && swipe.value > 2f) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 14.dp)
+                    .size(30.dp)
+                    .alpha(progress)
+                    .clip(CircleShape)
+                    .background(colors.card)
+                    .border(1.dp, colors.border, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(NexIcons.Reply, null, tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+            }
+        }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .offset { IntOffset(swipe.value.roundToInt(), 0) }
             .padding(horizontal = 12.dp, vertical = if (showHeader) 5.dp else 1.dp),
         horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Top
@@ -339,6 +437,7 @@ fun ChatBubble(
                 }
             }
         }
+    }
     }
 }
 
