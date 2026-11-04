@@ -22,6 +22,7 @@ object ChatApi {
     private const val PATH = "/api/chat"
 
     fun avatarUrl(uid: String, av: String): String = "${NexrifyLinks.SITE}$PATH?avatar=$uid&v=$av"
+    fun groupPhotoUrl(v: String): String = "${NexrifyLinks.SITE}$PATH?group_photo=1&v=$v"
 
     private fun execute(request: Request): JSONObject {
         try {
@@ -90,6 +91,24 @@ object ChatApi {
             }
         }
     }
+
+    suspend fun group(token: String): ChatGroup = parseGroup(get(token, mapOf("group" to "1")).getJSONObject("group"))
+
+    suspend fun members(token: String): List<ChatMember> {
+        val arr = get(token, mapOf("members" to "1")).optJSONArray("members") ?: return emptyList()
+        return buildList {
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                add(ChatMember(o.optString("uid"), o.optString("username"), o.optString("display"), o.optString("role"), o.optBoolean("online")))
+            }
+        }
+    }
+
+    fun parseGroup(o: JSONObject) = ChatGroup(
+        name = o.optString("name", "Global Chat"), desc = o.optString("desc"), photoV = o.optString("photoV"),
+        hasPhoto = o.optBoolean("hasPhoto"), members = o.optInt("members"), online = o.optInt("online"),
+        myRole = o.optString("myRole"), canEdit = o.optBoolean("canEdit")
+    )
 
     fun parseProfile(o: JSONObject): ChatProfile {
         val top = o.optJSONArray("top")
