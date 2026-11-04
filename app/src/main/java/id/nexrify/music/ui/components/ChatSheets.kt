@@ -3,6 +3,7 @@ package id.nexrify.music.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -112,14 +113,16 @@ fun ChatMessageMenu(
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.background, dragHandle = { SheetHandleBar() }) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 28.dp)) {
             if (!msg.deleted) {
+                // Bar reaksi: kalau tidak muat, digeser ke samping.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(26.dp))
+                        .clip(RoundedCornerShape(28.dp))
                         .background(colors.card)
-                        .border(1.dp, colors.border, RoundedCornerShape(26.dp))
+                        .border(1.dp, colors.border, RoundedCornerShape(28.dp))
+                        .horizontalScroll(rememberScrollState())
                         .padding(horizontal = 8.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CHAT_EMOJIS.forEach { e ->
@@ -129,6 +132,7 @@ fun ChatMessageMenu(
                                 .size(46.dp)
                                 .clip(CircleShape)
                                 .background(if (selected) colors.textPrimary.copy(alpha = 0.22f) else Color.Transparent)
+                                .then(if (selected) Modifier.border(1.dp, colors.textPrimary.copy(alpha = 0.5f), CircleShape) else Modifier)
                                 .clickable { onReact(e) },
                             contentAlignment = Alignment.Center
                         ) { Text(e, fontSize = 24.sp) }
@@ -231,6 +235,8 @@ fun ChatProfileSheet(
                         Spacer(Modifier.height(12.dp))
                         Text(p.display, style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
                         Text("@${p.username}", style = Typography.bodyMedium, color = colors.textMuted)
+                        Spacer(Modifier.height(6.dp))
+                        PresenceTag(p.online)
                         if (p.badges.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -479,29 +485,57 @@ fun ChatSettingsSheet(onDismiss: () -> Unit) {
         dragHandle = { SheetHandleBar() }
     ) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
-            Text(S.chatSettings, style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
-            Spacer(Modifier.height(12.dp))
-            ToggleRow(S.chatNotifAll, S.chatNotifAllSub, all) { st.setAll(it) }
-            ToggleRow(S.chatNotifMention, S.chatNotifMentionSub, mention && all, enabled = all) { st.setMention(it) }
-            ToggleRow(S.chatNotifReply, S.chatNotifReplySub, reply && all, enabled = all) { st.setReply(it) }
-            ToggleRow(S.chatNotifReaction, S.chatNotifReactionSub, reaction && all, enabled = all) { st.setReaction(it) }
-            ToggleRow(S.chatNotifAnnounce, S.chatNotifAnnounceSub, announce && all, enabled = all) { st.setAnnounce(it) }
-            Spacer(Modifier.height(8.dp))
-            Text(S.chatNotifLimitNote, fontSize = 12.sp, lineHeight = 17.sp, color = colors.textMuted)
-            Spacer(Modifier.height(20.dp))
-            Text(S.chatMutedUsers, style = Typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = colors.textSecondary)
-            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(42.dp).clip(CircleShape).background(colors.card).border(1.dp, colors.border, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Icon(NexIcons.Settings, null, tint = colors.textPrimary, modifier = Modifier.size(22.dp)) }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(S.chatSettings, style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
+                    Text(S.chatTitle, fontSize = 12.sp, color = colors.textMuted)
+                }
+            }
+
+            SettingsLabel(S.chatNotifTitle)
+            SettingsCard {
+                ToggleRow(NexIcons.Bell, S.chatNotifAll, S.chatNotifAllSub, all) { st.setAll(it) }
+                CardDivider()
+                ToggleRow(NexIcons.Person, S.chatNotifMention, S.chatNotifMentionSub, mention && all, enabled = all) { st.setMention(it) }
+                CardDivider()
+                ToggleRow(NexIcons.Reply, S.chatNotifReply, S.chatNotifReplySub, reply && all, enabled = all) { st.setReply(it) }
+                CardDivider()
+                ToggleRow(NexIcons.Favorite, S.chatNotifReaction, S.chatNotifReactionSub, reaction && all, enabled = all) { st.setReaction(it) }
+                CardDivider()
+                ToggleRow(NexIcons.Mail, S.chatNotifAnnounce, S.chatNotifAnnounceSub, announce && all, enabled = all) { st.setAnnounce(it) }
+            }
+            Row(
+                Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(14.dp)).background(colors.card.copy(alpha = 0.6f)).padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(NexIcons.Info, null, tint = colors.textMuted, modifier = Modifier.size(16.dp).padding(top = 1.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(S.chatNotifLimitNote, fontSize = 12.sp, lineHeight = 17.sp, color = colors.textMuted)
+            }
+
+            SettingsLabel("${S.chatMutedUsers}  ·  ${muted.size}")
             if (muted.isEmpty()) {
-                Text(S.chatNoMuted, color = colors.textMuted, style = Typography.bodySmall)
+                SettingsCard {
+                    Text(S.chatNoMuted, color = colors.textMuted, style = Typography.bodySmall, modifier = Modifier.padding(16.dp))
+                }
             } else {
-                muted.sorted().forEach { name ->
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(14.dp)).background(colors.card)
-                            .border(1.dp, colors.border, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("@$name", color = colors.textPrimary, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-                        TextButton(onClick = { st.unmute(name) }) { Text(S.chatUnmuteAction, color = colors.textPrimary, fontWeight = FontWeight.Bold) }
+                SettingsCard {
+                    muted.sorted().forEachIndexed { i, name ->
+                        if (i > 0) CardDivider()
+                        Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier.size(34.dp).clip(CircleShape).background(colors.border),
+                                contentAlignment = Alignment.Center
+                            ) { Text(name.take(1).uppercase(), color = colors.textPrimary, fontWeight = FontWeight.Bold) }
+                            Spacer(Modifier.width(12.dp))
+                            Text("@$name", color = colors.textPrimary, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            TextButton(onClick = { st.unmute(name) }) { Text(S.chatUnmuteAction, color = colors.textPrimary, fontWeight = FontWeight.Bold) }
+                        }
                     }
                 }
             }
@@ -510,14 +544,45 @@ fun ChatSettingsSheet(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ToggleRow(title: String, sub: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+private fun SettingsLabel(text: String) {
     val colors = NexrifyAppTheme.colors
-    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Text(
+        text.uppercase(),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = colors.textMuted,
+        modifier = Modifier.padding(top = 22.dp, bottom = 8.dp, start = 4.dp)
+    )
+}
+
+@Composable
+private fun SettingsCard(content: @Composable () -> Unit) {
+    val colors = NexrifyAppTheme.colors
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(colors.card).border(1.dp, colors.border, RoundedCornerShape(18.dp))
+    ) { content() }
+}
+
+@Composable
+private fun CardDivider() {
+    val colors = NexrifyAppTheme.colors
+    Box(Modifier.fillMaxWidth().padding(start = 58.dp).height(1.dp).background(colors.border.copy(alpha = 0.7f)))
+}
+
+@Composable
+private fun ToggleRow(icon: ImageVector, title: String, sub: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+    val colors = NexrifyAppTheme.colors
+    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).background(if (enabled) colors.border else colors.border.copy(alpha = 0.4f)),
+            contentAlignment = Alignment.Center
+        ) { Icon(icon, null, tint = if (enabled) colors.textPrimary else colors.textMuted, modifier = Modifier.size(18.dp)) }
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, color = if (enabled) colors.textPrimary else colors.textMuted, fontWeight = FontWeight.SemiBold)
             Text(sub, color = colors.textMuted, fontSize = 12.sp, lineHeight = 16.sp)
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(10.dp))
         Switch(
             checked = checked,
             onCheckedChange = onChange,
