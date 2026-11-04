@@ -173,7 +173,7 @@ fun EditProfileDialog(onDismiss: () -> Unit) {
 }
 
 /** Ambil foto dari galeri, potong jadi persegi 256 px, simpan sebagai JPEG kecil dalam bentuk data URL. */
-private fun toAvatarDataUrl(context: android.content.Context, uri: Uri): String {
+internal fun toAvatarDataUrl(context: android.content.Context, uri: Uri): String {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
     var sample = 1
