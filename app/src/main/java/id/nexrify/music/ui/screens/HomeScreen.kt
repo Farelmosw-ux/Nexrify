@@ -82,6 +82,7 @@ fun HomeScreen(
     viewModel: MusicViewModel,
     onOpenMailbox: () -> Unit = {},
     onOpenChat: () -> Unit = {},
+    onOpenDonate: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val homeSections by viewModel.homeSections.collectAsState()
@@ -162,6 +163,7 @@ fun HomeScreen(
             AccountTopButton(account = currentAccount, onClick = { showProfileMenu = true })
         }
 
+        DonateEntryCard(onClick = onOpenDonate)
         Spacer(modifier = Modifier.height(12.dp))
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -711,6 +713,46 @@ private fun PickBanner(
                 tint = PureBlack,
                 modifier = Modifier.size(26.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun DonateEntryCard(onClick: () -> Unit) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .clip(shape)
+            .background(
+                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    listOf(androidx.compose.ui.graphics.Color(0x33F5C242), colors.card)
+                )
+            )
+            .border(1.dp, androidx.compose.ui.graphics.Color(0x55F5C242), shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(
+                    androidx.compose.ui.graphics.Brush.linearGradient(
+                        listOf(androidx.compose.ui.graphics.Color(0xFFFFE9A0), androidx.compose.ui.graphics.Color(0xFFD9962B))
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(NexIcons.Crown, S.donateOpenCd, tint = androidx.compose.ui.graphics.Color(0xFF2A1B00), modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(S.donateTitle, style = Typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
+            Text(S.donateEntrySub, style = Typography.bodySmall, color = colors.textMuted)
         }
     }
 }
