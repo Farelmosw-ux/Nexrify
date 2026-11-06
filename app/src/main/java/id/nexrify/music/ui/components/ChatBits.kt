@@ -228,7 +228,8 @@ fun ChatBubble(
     onAvatarClick: () -> Unit,
     onReactionClick: (String) -> Unit,
     onRetry: () -> Unit,
-    onSwipeReply: () -> Unit = {}
+    onSwipeReply: () -> Unit = {},
+    topRank: Int = 0
 ) {
     val colors = NexrifyAppTheme.colors
     val haptic = LocalHapticFeedback.current
@@ -331,6 +332,7 @@ fun ChatBubble(
                         modifier = Modifier.widthIn(max = 150.dp)
                     )
                     Text("  @${msg.username}", style = Typography.labelSmall, color = colors.textMuted, maxLines = 1)
+                    if (topRank in 1..3) { Spacer(Modifier.width(4.dp)); TopTag(topRank) }
                     msg.badges.forEach { Spacer(Modifier.width(4.dp)); BadgeChip(it) }
                 }
             }
