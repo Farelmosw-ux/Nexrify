@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.nexrify.music.data.chat.CHAT_EMOJIS
 import id.nexrify.music.data.chat.ChatManager
+import id.nexrify.music.data.donate.DonateManager
 import id.nexrify.music.data.chat.ChatMessage
 import id.nexrify.music.data.chat.ChatProfile
 import id.nexrify.music.data.chat.ChatUserHit
@@ -203,7 +204,8 @@ fun ChatProfileSheet(
     isMuted: Boolean,
     onMention: (String) -> Unit,
     onToggleMute: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    showActions: Boolean = true
 ) {
     val colors = NexrifyAppTheme.colors
     val manager = remember { ChatManager.getInstance() }
@@ -237,6 +239,10 @@ fun ChatProfileSheet(
                         Text("@${p.username}", style = Typography.bodyMedium, color = colors.textMuted)
                         Spacer(Modifier.height(6.dp))
                         PresenceTag(p.online)
+                        if (p.donateRank in 1..3 && p.titleOn) {
+                            Spacer(Modifier.height(8.dp))
+                            TopTag(p.donateRank)
+                        }
                         if (p.badges.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -281,6 +287,43 @@ fun ChatProfileSheet(
                         Spacer(Modifier.height(8.dp))
                         InfoBlock(S.chatBioLabel, p.bio.ifBlank { S.chatNoBio }, dim = p.bio.isBlank())
                     }
+                    if (isMe && p.donateRank in 1..3) {
+                        Spacer(Modifier.height(12.dp))
+                        var titleOn by remember(p.titleOn) { mutableStateOf(p.titleOn) }
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.card).border(1.dp, colors.border, RoundedCornerShape(14.dp)).padding(12.dp)
+                        ) {
+                            Text(S.donateProfileTitleSection, fontSize = 11.sp, color = colors.textMuted, fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    TopTag(p.donateRank)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(S.donateTitleSwitch, fontSize = 12.sp, color = colors.textSecondary)
+                                }
+                                Switch(
+                                    checked = titleOn,
+                                    onCheckedChange = { v ->
+                                        titleOn = v
+                                        scope.launch {
+                                            try {
+                                                DonateManager.setTitle(v)
+                                                profile = manager.profile(username) ?: profile
+                                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                                throw e
+                                            } catch (_: Throwable) {
+                                                titleOn = !v
+                                            }
+                                        }
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = colors.background, checkedTrackColor = colors.textPrimary,
+                                        uncheckedThumbColor = colors.textMuted, uncheckedTrackColor = colors.card, uncheckedBorderColor = colors.border
+                                    )
+                                )
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatBox(p.liked.toString(), S.chatLikedSongs, Modifier.weight(1f))
@@ -311,7 +354,7 @@ fun ChatProfileSheet(
                     Spacer(Modifier.height(20.dp))
                     if (isMe) {
                         if (!editing) PillButton(S.chatEditProfile, filled = true, modifier = Modifier.fillMaxWidth()) { editing = true }
-                    } else {
+                    } else if (showActions) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             PillButton(S.chatMention, filled = true, modifier = Modifier.weight(1f)) { onMention(p.username) }
                             PillButton(if (isMuted) S.chatUnmuteAction else S.chatMuteAction, filled = false, modifier = Modifier.weight(1f), onClick = onToggleMute)
