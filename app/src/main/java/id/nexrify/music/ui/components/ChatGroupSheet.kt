@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.nexrify.music.data.chat.ChatManager
+import id.nexrify.music.data.donate.DonateManager
 import id.nexrify.music.data.chat.ChatMember
 import id.nexrify.music.i18n.S
 import id.nexrify.music.i18n.currentStrings
@@ -70,6 +71,7 @@ fun ChatGroupSheet(onOpenProfile: (String) -> Unit, onDismiss: () -> Unit) {
     val manager = remember { ChatManager.getInstance() }
     val group by manager.group.collectAsState()
     val members by manager.members.collectAsState()
+    val ranks by DonateManager.ranks.collectAsState()
 
     var query by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf(false) }
@@ -232,11 +234,11 @@ fun ChatGroupSheet(onOpenProfile: (String) -> Unit, onDismiss: () -> Unit) {
             }
             if (staff.isNotEmpty()) {
                 item { SectionLabel(S.chatStaffAdminSection, staff.size) }
-                items(staff, key = { "s" + it.uid }) { MemberRow(it) { onOpenProfile(it.username) } }
+                items(staff, key = { "s" + it.uid }) { MemberRow(it, ranks[it.username.lowercase()] ?: 0) { onOpenProfile(it.username) } }
             }
             if (regular.isNotEmpty()) {
                 item { SectionLabel(S.chatMemberSection, regular.size) }
-                items(regular, key = { "m" + it.uid }) { MemberRow(it) { onOpenProfile(it.username) } }
+                items(regular, key = { "m" + it.uid }) { MemberRow(it, ranks[it.username.lowercase()] ?: 0) { onOpenProfile(it.username) } }
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
@@ -256,7 +258,7 @@ private fun SectionLabel(text: String, count: Int) {
 }
 
 @Composable
-private fun MemberRow(m: ChatMember, onClick: () -> Unit) {
+private fun MemberRow(m: ChatMember, topRank: Int, onClick: () -> Unit) {
     val colors = NexrifyAppTheme.colors
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(vertical = 8.dp, horizontal = 4.dp),
@@ -274,6 +276,7 @@ private fun MemberRow(m: ChatMember, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
+                if (topRank in 1..3) { Spacer(Modifier.width(6.dp)); TopTag(topRank) }
                 if (m.role.isNotEmpty()) { Spacer(Modifier.width(6.dp)); BadgeChip(m.role) }
             }
             Text("@${m.username}", color = colors.textMuted, fontSize = 12.sp, maxLines = 1)
