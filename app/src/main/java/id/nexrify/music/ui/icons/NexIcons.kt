@@ -258,4 +258,29 @@ object NexIcons {
             "M16 4.8 A3.2 3.2 0 0 1 16 11.2", "M18 14.3 C20.2 15 21.5 16.8 21.5 20"
         )
     }
+    val Crown by lazy { icon("Crown", "M3 8 L7.5 12.5 L12 5 L16.5 12.5 L21 8 L19 18 H5 Z", "M5.5 21 H18.5") }
+    val Gift by lazy {
+        icon(
+            "Gift",
+            "M4 11 H20 V20 A1 1 0 0 1 19 21 H5 A1 1 0 0 1 4 20 Z", "M3 7.5 H21 V11 H3 Z", "M12 7.5 V21",
+            "M12 7.5 C12 7.5 10.5 3.5 8 4 C6 4.4 6.2 7.5 9 7.5", "M12 7.5 C12 7.5 13.5 3.5 16 4 C18 4.4 17.8 7.5 15 7.5"
+        )
+    }
+    val QrCode by lazy {
+        icon(
+            "QrCode",
+            "M4 4 H10 V10 H4 Z", "M14 4 H20 V10 H14 Z", "M4 14 H10 V20 H4 Z",
+            "M14 14 H16 V16 H14 Z", "M18 14 H20 V16 H18 Z", "M14 18 H16 V20 H14 Z", "M18 18 H20 V20 H18 Z", "M16 16 H18 V18 H16 Z"
+        )
+    }
+    val Wallet by lazy {
+        icon(
+            "Wallet",
+            "M4 7 A2 2 0 0 1 6 5 H18 V9", "M4 7 V18 A2 2 0 0 0 6 20 H20 A1 1 0 0 0 21 19 V10 A1 1 0 0 0 20 9 H6 A2 2 0 0 1 4 7 Z",
+            circle(16.5f, 14.5f, 1.2f)
+        )
+    }
+    val ImagePick by lazy {
+        icon("ImagePick", "M4 6 A2 2 0 0 1 6 4 H18 A2 2 0 0 1 20 6 V18 A2 2 0 0 1 18 20 H6 A2 2 0 0 1 4 18 Z", circle(9f, 9f, 1.6f), "M4 17 L9 12 L13 16 L15.5 13.5 L20 18")
+    }
 }
