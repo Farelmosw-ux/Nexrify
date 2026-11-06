@@ -57,6 +57,7 @@ import id.nexrify.music.data.account.AccountManager
 import id.nexrify.music.data.chat.CHAT_MAX_LENGTH
 import id.nexrify.music.data.chat.ChatConnection
 import id.nexrify.music.data.chat.ChatManager
+import id.nexrify.music.data.donate.DonateManager
 import id.nexrify.music.data.chat.ChatMessage
 import id.nexrify.music.data.chat.ChatTopTrack
 import id.nexrify.music.data.chat.ChatUserHit
@@ -144,6 +145,14 @@ fun ChatScreen(viewModel: MusicViewModel, highlightSeq: Long, onBack: () -> Unit
     var showSearch by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showGroup by remember { mutableStateOf(false) }
+    val donorRanks by DonateManager.ranks.collectAsState()
+    // Tag TOP DONATE di chat: segarkan tiap 5 menit selama chat terbuka.
+    LaunchedEffect(Unit) {
+        while (true) {
+            DonateManager.refreshTop()
+            delay(5 * 60_000L)
+        }
+    }
     val group by manager.group.collectAsState()
     var highlighted by remember { mutableStateOf<Long?>(null) }
     var unseen by remember { mutableStateOf(0) }
@@ -368,6 +377,7 @@ fun ChatScreen(viewModel: MusicViewModel, highlightSeq: Long, onBack: () -> Unit
                                     myId = myId,
                                     myUsername = myName,
                                     showHeader = row.showHeader,
+                                    topRank = donorRanks[m.username.lowercase()] ?: 0,
                                     highlighted = highlighted == m.seq,
                                     onLongPress = { menuMsg = m },
                                     onReplyClick = { jumpTo(it) },
