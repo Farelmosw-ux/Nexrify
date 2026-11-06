@@ -87,3 +87,9 @@ This archive continues the native Android/Kotlin project. Existing package ID, U
 - Laporan crash dari HP teman (vivo 1819, Android 11, mode terang): aplikasi mati 1 sampai 2 detik setelah layar Masuk/Daftar tampil, tanpa disentuh. Penyebab belum bisa dipastikan tanpa stack trace.
 - util/CrashReporter.kt: crash yang mematikan aplikasi disimpan ke filesDir/last_crash.txt, lalu CrashReportDialog menampilkannya saat aplikasi dibuka lagi (salin atau bagikan). Kesalahan di scope coroutine tingkat aplikasi (Application, OfflineManager, AccountSync, PlaybackService, OfflineDownloadService) kini dicatat ke non_fatal.txt dan tidak mematikan aplikasi.
 - Kalau aplikasi masih mati sebelum UI tampil: adb logcat -b crash, atau menu pengembang untuk bug report.
+
+## Donasi / Dukung Developer (4.0.6)
+- Server: `api/donate.js`, `api/telegram.js`, `api/_donate.js`, `api/_tg.js`; panel `/nexrapanel` tab Donasi.
+- Aplikasi: `data/donate/*` (DonateApi, DonateManager, DonateImage), `ui/screens/DonateScreen.kt`, `ui/components/DonateBits.kt` (TopTag, DonorBanner).
+- Alur: buat donasi (QRIS/DANA) → bayar → unggah foto bukti → Telegram owner (✅/❌) → total masuk papan peringkat (3 teratas, tag TOP n DONATE di profil, chat, dan daftar anggota).
+- Catatan: di dalam builder NavHost, jangan tulis `id.nexrify...` penuh karena `id` bentrok dengan properti NavGraphBuilder; pakai import.
