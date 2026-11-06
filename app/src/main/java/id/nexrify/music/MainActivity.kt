@@ -103,6 +103,7 @@ import id.nexrify.music.ui.theme.MutedText
 import id.nexrify.music.ui.theme.PureBlack
 import id.nexrify.music.ui.theme.PureWhite
 import id.nexrify.music.ui.screens.ChatScreen
+import id.nexrify.music.ui.screens.DonateScreen
 import id.nexrify.music.viewmodel.MusicViewModel
 
 class MainActivity : ComponentActivity() {
@@ -296,7 +297,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
         Scaffold(
             containerColor = colors.background,
             bottomBar = {
-                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute?.startsWith("chat") != true) NavigationBar(
+                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute != "donate" && currentRoute?.startsWith("chat") != true) NavigationBar(
                     containerColor = colors.background,
                     tonalElevation = 0.dp
                 ) {
@@ -381,8 +382,12 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                         HomeScreen(
                             viewModel = viewModel,
                             onOpenMailbox = { navController.navigate("mailbox") },
-                            onOpenChat = { navController.navigate("chat?seq=0") }
+                            onOpenChat = { navController.navigate("chat?seq=0") },
+                            onOpenDonate = { navController.navigate("donate") }
                         )
+                    }
+                    composable("donate") {
+                        DonateScreen(onBack = { navController.popBackStack() })
                     }
                     composable("mailbox") {
                         MailboxScreen(onBack = { navController.popBackStack() })
