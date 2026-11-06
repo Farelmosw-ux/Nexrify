@@ -122,7 +122,9 @@ object ChatApi {
             },
             badges = o.optJSONArray("badges").toStringList(),
             blockedByMe = o.optBoolean("blockedByMe", false),
-            online = o.optBoolean("online", false)
+            online = o.optBoolean("online", false),
+            donateRank = o.optInt("donateRank", 0),
+            titleOn = o.optBoolean("titleOn", true)
         )
     }
 
