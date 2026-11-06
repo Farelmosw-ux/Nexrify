@@ -42,7 +42,9 @@ data class ChatProfile(
     val top: List<ChatTopTrack>,
     val badges: List<String>,
     val blockedByMe: Boolean = false,
-    val online: Boolean = false
+    val online: Boolean = false,
+    val donateRank: Int = 0,
+    val titleOn: Boolean = true
 )
 
 data class ChatUserHit(val username: String, val uid: String, val display: String)
