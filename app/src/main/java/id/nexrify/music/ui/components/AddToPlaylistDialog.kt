@@ -1,0 +1,440 @@
+package id.nexrify.music.ui.components
+
+import id.nexrify.music.i18n.S
+
+import id.nexrify.music.ui.icons.NexIcons
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import id.nexrify.music.data.model.Track
+import id.nexrify.music.ui.theme.NexrifyAppTheme
+import id.nexrify.music.ui.theme.Typography
+import id.nexrify.music.viewmodel.MusicViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddToPlaylistDialog(
+    track: Track,
+    viewModel: MusicViewModel,
+    onDismiss: () -> Unit
+) {
+    val playlists by viewModel.playlists.collectAsState()
+    val colors = NexrifyAppTheme.colors
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newPlaylistName by remember { mutableStateOf("") }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = colors.background,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(colors.border)
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            // Track Header Preview
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = track.highResThumbnailUrl,
+                    contentDescription = track.title,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = track.title,
+                        style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = track.artist,
+                        style = Typography.bodyMedium,
+                        color = colors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Aksi antrian
+            val queueContext = androidx.compose.ui.platform.LocalContext.current
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                QueueActionTile(
+                    icon = NexIcons.PlayArrow,
+                    text = S.playNextAction,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        viewModel.playNext(track)
+                        id.nexrify.music.i18n.currentStrings().let { NexNotifier.success(it.toastPlayNext, it.noteQueueTitle) }
+                        onDismiss()
+                    }
+                )
+                val queueList by viewModel.queue.collectAsState()
+                val queueIdx by viewModel.queueIndex.collectAsState()
+                val posInQueue = queueList.indexOfFirst { it.id == track.id }
+                val inQueue = posInQueue >= 0 && posInQueue != queueIdx
+                QueueActionTile(
+                    icon = if (inQueue) NexIcons.DeleteOutline else NexIcons.QueueMusic,
+                    text = if (inQueue) S.removeFromQueueAction else S.addToQueueAction,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        val st = id.nexrify.music.i18n.currentStrings()
+                        when {
+                            inQueue -> {
+                                viewModel.removeFromQueue(posInQueue)
+                                NexNotifier.info(st.toastQueueRemoved, st.noteQueueTitle)
+                            }
+                            posInQueue >= 0 -> NexNotifier.info(st.toastQueueIsCurrent, st.noteQueueTitle)
+                            else -> {
+                                viewModel.addToQueue(track)
+                                NexNotifier.success(st.toastQueued, st.noteQueueTitle)
+                                onDismiss()
+                            }
+                        }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Suka / batal suka
+            val favs by viewModel.favorites.collectAsState()
+            val isLiked = favs.any { it.id == track.id }
+            QueueActionTile(
+                icon = if (isLiked) NexIcons.Favorite else NexIcons.FavoriteBorder,
+                text = if (isLiked) S.unlikeAction else S.likeAction,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { viewModel.toggleFavorite(track) }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Unduh offline: status mengikuti lagu ini
+            val offlineTracks by viewModel.offlineTracks.collectAsState()
+            val downloads by viewModel.downloads.collectAsState()
+            val isDownloaded = offlineTracks.any { it.track.id == track.id }
+            val downloadState = downloads[track.id]?.state
+            QueueActionTile(
+                icon = if (isDownloaded) NexIcons.DeleteOutline else NexIcons.Download,
+                text = when {
+                    isDownloaded -> S.downloadedTile
+                    downloadState is id.nexrify.music.data.download.DownloadState.Downloading ->
+                        S.downloadingTile((downloadState.progress * 100f).toInt())
+                    downloadState == id.nexrify.music.data.download.DownloadState.Queued -> S.downloadQueuedTile
+                    else -> S.downloadTile
+                },
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    val strings = id.nexrify.music.i18n.currentStrings()
+                    when {
+                        isDownloaded -> {
+                            viewModel.deleteOffline(track.id)
+                            NexNotifier.info(strings.toastDownloadRemoved, strings.noteDownloadTitle)
+                            onDismiss()
+                        }
+                        downloadState != null && downloadState !is id.nexrify.music.data.download.DownloadState.Failed -> {
+                            viewModel.cancelDownload(track.id)
+                        }
+                        else -> {
+                            viewModel.downloadTrack(track)
+                            NexNotifier.success(strings.toastDownloadStarted, strings.noteDownloadTitle)
+                            onDismiss()
+                        }
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Create New Playlist Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.card)
+                    .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                    .clickable { showCreateDialog = true }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(colors.accent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = NexIcons.Add,
+                        contentDescription = S.cd("New"),
+                        tint = colors.background,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    text = S.newPlaylist,
+                    style = Typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = colors.textPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = S.choosePlaylist,
+                style = Typography.labelLarge.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                color = colors.textMuted,
+                modifier = Modifier.padding(bottom = 2.dp)
+            )
+            if (playlists.any { pl -> pl.tracks.any { it.id == track.id } }) {
+                Text(
+                    text = S.playlistTapToRemove,
+                    style = Typography.bodySmall.copy(fontSize = 11.sp),
+                    color = colors.textMuted,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+
+            if (playlists.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = S.noPlaylistCreateFirst,
+                        style = Typography.bodyMedium,
+                        color = colors.textMuted
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(playlists, key = { it.id }) { playlist ->
+                        val alreadyInPlaylist = playlist.tracks.any { it.id == track.id }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (alreadyInPlaylist) colors.card.copy(alpha = 0.5f) else colors.card)
+                                .clickable {
+                                    val st = id.nexrify.music.i18n.currentStrings()
+                                    if (!alreadyInPlaylist) {
+                                        viewModel.addTrackToPlaylist(playlist.id, track)
+                                        NexNotifier.success(st.notePlaylistAdded(track.title, playlist.name), st.notePlaylistTitle)
+                                        onDismiss()
+                                    } else {
+                                        // Ketuk lagi = hapus dari playlist ini. Dialog tetap terbuka supaya bisa dibatalkan.
+                                        viewModel.removeTrackFromPlaylist(playlist.id, track.id)
+                                        NexNotifier.info(st.notePlaylistRemoved(track.title, playlist.name), st.notePlaylistRemovedTitle)
+                                    }
+                                }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(colors.border),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = NexIcons.QueueMusic,
+                                    contentDescription = null,
+                                    tint = colors.textPrimary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = playlist.name,
+                                    style = Typography.titleMedium,
+                                    color = colors.textPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = S.songCount(playlist.tracks.size),
+                                    style = Typography.bodySmall,
+                                    color = colors.textMuted
+                                )
+                            }
+                            if (alreadyInPlaylist) {
+                                Box(
+                                    modifier = Modifier.size(26.dp).clip(CircleShape).background(colors.textPrimary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = NexIcons.Check,
+                                        contentDescription = S.cd("Added"),
+                                        tint = colors.background,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = {
+                Text(
+                    text = S.namePlaylist,
+                    style = Typography.titleLarge,
+                    color = colors.textPrimary
+                )
+            },
+            text = {
+                OutlinedTextField(
+                    value = newPlaylistName,
+                    onValueChange = { newPlaylistName = it },
+                    placeholder = { Text(S.playlistNameHint, color = colors.textMuted) },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = colors.card,
+                        unfocusedContainerColor = colors.card,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary,
+                        cursorColor = colors.textPrimary,
+                        focusedIndicatorColor = colors.accent,
+                        unfocusedIndicatorColor = colors.border
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newPlaylistName.isNotBlank()) {
+                            val created = viewModel.createPlaylist(newPlaylistName.trim())
+                            viewModel.addTrackToPlaylist(created.id, track)
+                            id.nexrify.music.i18n.currentStrings().let {
+                                NexNotifier.success(it.notePlaylistCreated(newPlaylistName.trim(), track.title), it.notePlaylistTitle)
+                            }
+                            showCreateDialog = false
+                            onDismiss()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.accent,
+                        contentColor = colors.background
+                    )
+                ) {
+                    Text(S.createAndAdd)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text(S.cancel, color = colors.textMuted)
+                }
+            },
+            containerColor = colors.background
+        )
+    }
+}
+
+@Composable
+private fun QueueActionTile(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val colors = NexrifyAppTheme.colors
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.card)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = colors.textPrimary, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = text,
+            style = Typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
