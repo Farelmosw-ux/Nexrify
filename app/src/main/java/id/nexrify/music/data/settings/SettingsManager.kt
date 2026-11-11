@@ -106,7 +106,15 @@ class SettingsManager private constructor(private val context: Context) {
         }
     }
 
-    private fun loadThemeStyle(): ThemeStyle = runCatching { ThemeStyle.valueOf(prefs.getString(KEY_THEME_STYLE, ThemeStyle.CLASSIC.name) ?: ThemeStyle.CLASSIC.name) }.getOrDefault(ThemeStyle.CLASSIC)
+    private fun loadThemeStyle(): ThemeStyle {
+        val saved = runCatching {
+            ThemeStyle.valueOf(prefs.getString(KEY_THEME_STYLE, ThemeStyle.CLASSIC.name) ?: ThemeStyle.CLASSIC.name)
+        }.getOrDefault(ThemeStyle.CLASSIC)
+        // Tema lama yang sudah dihentikan otomatis bermigrasi ke Liquid Glass baru.
+        return if (saved == ThemeStyle.VIOLET_NIGHT || saved == ThemeStyle.AURORA_GOLD || saved == ThemeStyle.OBSIDIAN) {
+            ThemeStyle.LIQUID_GLASS
+        } else saved
+    }
 
     fun setThemeStyle(style: ThemeStyle) { _themeStyle.value = style; prefs.edit().putString(KEY_THEME_STYLE, style.name).apply() }
 
