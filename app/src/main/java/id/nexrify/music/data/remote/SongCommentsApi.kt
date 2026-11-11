@@ -10,6 +10,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.json.JSONObject
 import java.io.IOException
+import java.util.UUID
 
 data class SongCommentNotif(val type: String, val song: String, val commentId: String, val from: String, val text: String, val ts: Long)
 data class SongComment(val id: String, val uid: String, val username: String, val display: String, val text: String, val ts: Long, val parentId: String, val likes: Int, val liked: Boolean, val edited: Boolean)
@@ -37,8 +38,8 @@ object SongCommentsApi {
         val a = j.optJSONArray("comments") ?: return emptyList()
         return buildList { for (i in 0 until a.length()) a.optJSONObject(i)?.let { add(parse(it)) } }
     }
-    suspend fun send(song: String, text: String, parentId: String = ""): SongComment {
-        val b = JSONObject().put("action", "send").put("song", song).put("text", text).put("parentId", parentId)
+    suspend fun send(song: String, text: String, parentId: String = "", requestId: String = UUID.randomUUID().toString()): SongComment {
+        val b = JSONObject().put("action", "send").put("song", song).put("text", text).put("parentId", parentId).put("requestId", requestId)
         return parse(call(post(b)).getJSONObject("comment"))
     }
     suspend fun like(song: String, id: String): Pair<Boolean, Int> {
