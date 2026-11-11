@@ -30,6 +30,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -92,6 +93,7 @@ fun FullPlayerSheet(
     var showQueue by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
     var isLyricsExpanded by remember { mutableStateOf(false) }
+    var showSongComments by remember { mutableStateOf(false) }
 
     val colors = NexrifyAppTheme.colors
 
@@ -530,6 +532,15 @@ fun FullPlayerSheet(
                 Spacer(modifier = Modifier.height(36.dp))
             }
         }
+        OutlinedButton(
+            onClick = { showSongComments = true },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(NexIcons.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Komentar lagu")
+        }
     }
 
     if (showAddToPlaylist) {
@@ -542,6 +553,10 @@ fun FullPlayerSheet(
 
     if (showQueue) {
         QueueSheet(viewModel = viewModel, onDismiss = { showQueue = false })
+    }
+
+    if (showSongComments) {
+        SongCommentsSheet(track = track, onDismiss = { showSongComments = false })
     }
 
     if (showSettingsDialog) {
