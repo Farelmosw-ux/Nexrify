@@ -54,6 +54,7 @@ import id.nexrify.music.data.model.Track
 import id.nexrify.music.i18n.S
 import id.nexrify.music.ui.components.AddToPlaylistDialog
 import id.nexrify.music.ui.components.NexLoadingFill
+import id.nexrify.music.ui.components.PullToRefreshBox
 import id.nexrify.music.ui.components.TrackItem
 import id.nexrify.music.ui.icons.NexIcons
 import id.nexrify.music.ui.theme.NexrifyAppTheme
@@ -109,10 +110,14 @@ fun SearchPageScreen(
         if (record) viewModel.searchAndRemember(clean) else viewModel.search(clean)
     }
 
+    PullToRefreshBox(
+        refreshing = isSearching,
+        onRefresh = { if (submittedQuery.isNotBlank()) viewModel.search(submittedQuery) },
+        modifier = modifier.fillMaxSize().background(colors.background)
+    ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .padding(top = 8.dp)
     ) {
         Row(
@@ -270,6 +275,7 @@ fun SearchPageScreen(
                 }
             }
         }
+    }
     }
 
     trackForPlaylist?.let { track ->
