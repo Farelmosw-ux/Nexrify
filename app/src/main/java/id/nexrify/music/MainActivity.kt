@@ -23,6 +23,14 @@ import android.net.Uri
 import android.content.Intent
 
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.border
+import androidx.compose.ui.draw.blur
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 
 import androidx.compose.foundation.layout.Row
 
@@ -40,6 +48,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -298,38 +307,116 @@ fun MainAppScreen(viewModel: MusicViewModel) {
         Scaffold(
             containerColor = colors.background,
             bottomBar = {
-                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute != "donate" && currentRoute != "feedback" && currentRoute?.startsWith("chat") != true) NavigationBar(
-                    containerColor = colors.background,
-                    tonalElevation = 0.dp
-                ) {
-                    Screen.bottomNavItems.forEach { screen ->
-                        val selected = currentRoute == screen.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                val themeStyle by id.nexrify.music.data.settings.SettingsManager.getInstance().themeStyle.collectAsState()
+                val glassNavigation = themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS
+                if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute != "donate" && currentRoute != "feedback" && currentRoute?.startsWith("chat") != true) {
+                    if (glassNavigation) {
+                        val navItems = Screen.bottomNavItems
+                        val selectedIndex = navItems.indexOfFirst { currentRoute == it.route }.coerceAtLeast(0)
+                        BoxWithConstraints(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .height(68.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(Color(0xB8171B29))
+                                .border(1.dp, Color(0x887F86C7), RoundedCornerShape(24.dp))
+                                .pointerInput(currentRoute, navItems.size) {
+                                    var dragDistance = 0f
+                                    detectHorizontalDragGestures(
+                                        onHorizontalDrag = { _, amount -> dragDistance += amount },
+                                        onDragEnd = {
+                                            if (kotlin.math.abs(dragDistance) > 55f) {
+                                                val next = (selectedIndex + if (dragDistance < 0f) 1 else -1).coerceIn(0, navItems.lastIndex)
+                                                navItems.getOrNull(next)?.let { target ->
+                                                    navController.navigate(target.route) {
+                                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
+                                                }
+                                            }
+                                            dragDistance = 0f
+                                        }
+                                    )
                                 }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = screen.icon,
-                                    contentDescription = screen.title(S)
-                                )
-                            },
-                            label = { Text(screen.title(S)) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = colors.textPrimary,
-                                selectedTextColor = colors.textPrimary,
-                                unselectedIconColor = colors.textMuted,
-                                unselectedTextColor = colors.textMuted,
-                                indicatorColor = colors.card
+                        ) {
+                            val itemWidth = maxWidth / navItems.size
+                            val indicatorOffset by animateDpAsState(
+                                targetValue = itemWidth * selectedIndex,
+                                label = "glass-navigation-indicator"
                             )
-                        )
+                            Box(
+                                modifier = Modifier
+                                    .offset(x = indicatorOffset)
+                                    .width(itemWidth)
+                                    .fillMaxSize()
+                                    .padding(5.dp)
+                                    .clip(RoundedCornerShape(19.dp))
+                                    .blur(if (Build.VERSION.SDK_INT >= 33) 8.dp else 0.dp)
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.linearGradient(
+                                            listOf(Color(0x665F6597), Color(0x443B405F), Color(0x665F6597))
+                                        )
+                                    )
+                                    .border(1.dp, Color(0x667F86C7), RoundedCornerShape(19.dp))
+                            )
+                            Row(Modifier.fillMaxSize()) {
+                                navItems.forEach { screen ->
+                                    val selected = currentRoute == screen.route
+                                    Column(
+                                        modifier = Modifier.weight(1f).fillMaxSize()
+                                            .clickable {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            },
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = screen.icon,
+                                            contentDescription = screen.title(S),
+                                            tint = if (selected) colors.textPrimary else colors.textMuted
+                                        )
+                                        Spacer(Modifier.height(3.dp))
+                                        Text(
+                                            screen.title(S),
+                                            color = if (selected) colors.textPrimary else colors.textMuted,
+                                            fontSize = 10.sp,
+                                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        NavigationBar(containerColor = colors.background, tonalElevation = 0.dp) {
+                            Screen.bottomNavItems.forEach { screen ->
+                                val selected = currentRoute == screen.route
+                                NavigationBarItem(
+                                    selected = selected,
+                                    onClick = {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    },
+                                    icon = { Icon(imageVector = screen.icon, contentDescription = screen.title(S)) },
+                                    label = { Text(screen.title(S)) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = colors.textPrimary,
+                                        selectedTextColor = colors.textPrimary,
+                                        unselectedIconColor = colors.textMuted,
+                                        unselectedTextColor = colors.textMuted,
+                                        indicatorColor = colors.card
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
