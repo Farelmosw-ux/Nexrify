@@ -2,6 +2,16 @@ package id.nexrify.music.ui.components
 
 import id.nexrify.music.i18n.S
 
+import androidx.compose.ui.graphics.Color
+
+import androidx.compose.ui.graphics.Brush
+
+import androidx.compose.ui.draw.blur
+
+import androidx.compose.runtime.collectAsState
+
+import android.os.Build
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,16 +65,29 @@ fun MiniPlayer(
     modifier: Modifier = Modifier
 ) {
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val glassStyle by id.nexrify.music.data.settings.SettingsManager.getInstance().themeStyle.collectAsState()
+    val isGlass = glassStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(colors.card)
-            .border(1.dp, colors.border, RoundedCornerShape(14.dp))
+            .background(
+                if (isGlass) Brush.linearGradient(
+                    listOf(Color(0xCC282D42), Color(0xAA171B29), Color(0xCC34314E))
+                ) else Brush.linearGradient(listOf(colors.card, colors.card))
+            )
+            .border(1.dp, if (isGlass) colors.accent.copy(alpha = 0.55f) else colors.border, RoundedCornerShape(14.dp))
             .clickable { onClick() }
     ) {
+        if (isGlass && Build.VERSION.SDK_INT >= 33) {
+            Box(
+                Modifier.fillMaxWidth().height(10.dp)
+                    .background(Brush.radialGradient(listOf(colors.accent.copy(alpha = 0.24f), Color.Transparent)))
+                    .blur(16.dp)
+            )
+        }
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier
