@@ -299,6 +299,7 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Switch(
+                        modifier = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
                         checked = capsuleEnabled,
                         onCheckedChange = { settingsManager.setCapsuleEnabled(it) },
                         colors = SwitchDefaults.colors(
@@ -343,28 +344,45 @@ fun SettingsDialog(
                     }
                 }
                 Spacer(modifier = Modifier.height(14.dp))
-                Text("Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                Text("Liquid Glass gratis untuk semua. Tema spesial tersedia untuk Top 3 Donatur.", style = Typography.bodySmall, color = colors.textMuted)
-                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.VIOLET_NIGHT, ThemeStyle.AURORA_GOLD, ThemeStyle.OBSIDIAN)
+                Text(if (S.english) "Theme style" else "Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text(
+                    if (S.english) "The new Liquid Glass style is available to Top 3 Donors. Admins and staff get access automatically."
+                    else "Gaya Liquid Glass baru tersedia untuk Top 3 Donatur. Admin dan staff mendapat akses otomatis.",
+                    style = Typography.bodySmall,
+                    color = colors.textMuted
+                )
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS)
                 styles.forEach { style ->
-                    val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
-                    val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
-                    val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
-                    val locked = premium && !canUsePremiumThemes
+                    val title = if (style == ThemeStyle.CLASSIC) "Classic" else "Liquid Glass"
+                    val desc = if (style == ThemeStyle.CLASSIC) {
+                        if (S.english) "Original Nexrify appearance" else "Tampilan asli Nexrify"
+                    } else {
+                        if (S.english) "Frosted panels, lens highlights and glass controls" else "Panel buram, efek lensa, dan kontrol kaca"
+                    }
+                    val locked = style == ThemeStyle.LIQUID_GLASS && !canUsePremiumThemes
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(14.dp))
                             .background(if (currentThemeStyle == style) colors.card else colors.surface)
-                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(12.dp))
+                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(14.dp))
                             .clickable(enabled = !locked) { settingsManager.setThemeStyle(style) }
-                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                            .padding(horizontal = 13.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(Modifier.weight(1f)) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(title, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, style = Typography.bodyMedium)
                             Text(desc, color = colors.textMuted, style = Typography.bodySmall)
                         }
-                        Text(if (locked) "TOP 3" else if (currentThemeStyle == style) "Dipakai" else if (premium) "Eksklusif" else "Gratis", color = if (locked) colors.textMuted else colors.accent, style = Typography.labelSmall)
+                        Text(
+                            when {
+                                locked -> if (S.english) "TOP DONOR" else "TOP DONATUR"
+                                currentThemeStyle == style -> if (S.english) "ACTIVE" else "AKTIF"
+                                style == ThemeStyle.LIQUID_GLASS -> if (S.english) "UNLOCKED" else "TERBUKA"
+                                else -> if (S.english) "FREE" else "GRATIS"
+                            },
+                            color = if (locked) colors.textMuted else colors.accent,
+                            style = Typography.labelSmall
+                        )
                     }
                 }
 
@@ -435,6 +453,7 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Switch(
+                        modifier = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
                         checked = reminderEnabled,
                         onCheckedChange = { prayerReminder.setEnabled(it) },
                         colors = SwitchDefaults.colors(
@@ -630,6 +649,7 @@ fun SettingsDialog(
                     }
 
                     Switch(
+                        modifier = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
                         checked = autoTranslate,
                         onCheckedChange = { settingsManager.setAutoTranslate(it) },
                         colors = SwitchDefaults.colors(
