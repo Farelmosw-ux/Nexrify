@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.sp
 import id.nexrify.music.data.model.Track
 import id.nexrify.music.data.remote.SongComment
 import id.nexrify.music.data.remote.SongCommentNotif
-import id.nexrify.music.data.remote.SongComment
-import id.nexrify.music.data.remote.SongCommentNotifsApi
+import id.nexrify.music.data.remote.SongCommentsApi
 import id.nexrify.music.ui.theme.NexrifyAppTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
