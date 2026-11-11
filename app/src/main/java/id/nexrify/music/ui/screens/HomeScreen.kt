@@ -3,6 +3,7 @@ package id.nexrify.music.ui.screens
 import androidx.compose.ui.graphics.Color
 
 import id.nexrify.music.ui.components.NexFooter
+import id.nexrify.music.ui.components.PullToRefreshBox
 
 import id.nexrify.music.ui.components.NexLoadingFill
 
@@ -130,10 +131,17 @@ fun HomeScreen(
         maghribManager.maghribFor(localNow.toLocalDate(), localNow.zone)
     }
 
+    PullToRefreshBox(
+        refreshing = isLoadingTrending,
+        onRefresh = {
+            if (selectedGenre == "Semua") viewModel.loadTrending(forceRefresh = true)
+            else viewModel.search("$selectedGenre music hits")
+        },
+        modifier = modifier.fillMaxSize().background(colors.background)
+    ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .padding(top = 16.dp)
     ) {
         // Greeting mengikuti jam lokal perangkat (zona waktu wilayah otomatis).
@@ -364,6 +372,7 @@ fun HomeScreen(
                 }
             }
         }
+    }
     }
 
     if (showProfileMenu) {
