@@ -67,6 +67,9 @@ import id.nexrify.music.data.settings.AudioQuality
 import id.nexrify.music.data.settings.AppLanguage
 import id.nexrify.music.data.settings.SettingsManager
 import id.nexrify.music.data.settings.ThemeMode
+import id.nexrify.music.data.settings.ThemeStyle
+import id.nexrify.music.data.account.AccountManager
+import id.nexrify.music.data.donate.DonateManager
 import id.nexrify.music.ui.theme.NexrifyAppTheme
 import id.nexrify.music.ui.theme.Typography
 import kotlinx.coroutines.launch
@@ -106,6 +109,10 @@ fun SettingsDialog(
     val scope = rememberCoroutineScope()
     val settingsManager = remember { SettingsManager.getInstance() }
     val currentTheme by settingsManager.themeMode.collectAsState()
+    val currentThemeStyle by settingsManager.themeStyle.collectAsState()
+    val donorRanks by DonateManager.ranks.collectAsState()
+    val currentUsername = AccountManager.getInstance().user.value?.username.orEmpty()
+    val isTopDonor = (donorRanks[currentUsername.lowercase()] ?: 0) in 1..3
     val currentQuality by settingsManager.audioQuality.collectAsState()
     val autoTranslate by settingsManager.autoTranslate.collectAsState()
     val currentLanguage by settingsManager.language.collectAsState()
@@ -331,6 +338,32 @@ fun SettingsDialog(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(14.dp))
+                Text("Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("Liquid Glass gratis untuk semua. Tema spesial tersedia untuk Top 3 Donatur.", style = Typography.bodySmall, color = colors.textMuted)
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.VIOLET_NIGHT, ThemeStyle.AURORA_GOLD, ThemeStyle.OBSIDIAN)
+                styles.forEach { style ->
+                    val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
+                    val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
+                    val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
+                    val locked = premium && !isTopDonor
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
+                            .background(if (currentThemeStyle == style) colors.card else colors.surface)
+                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(12.dp))
+                            .clickable(enabled = !locked) { settingsManager.setThemeStyle(style) }
+                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(title, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, style = Typography.bodyMedium)
+                            Text(desc, color = colors.textMuted, style = Typography.bodySmall)
+                        }
+                        Text(if (locked) "TOP 3" else if (currentThemeStyle == style) "Dipakai" else if (premium) "Eksklusif" else "Gratis", color = if (locked) colors.textMuted else colors.accent, style = Typography.labelSmall)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
                 HorizontalDivider(color = colors.border, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -408,6 +441,32 @@ fun SettingsDialog(
                         )
                     )
                 }
+                Spacer(modifier = Modifier.height(14.dp))
+                Text("Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("Liquid Glass gratis untuk semua. Tema spesial tersedia untuk Top 3 Donatur.", style = Typography.bodySmall, color = colors.textMuted)
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.VIOLET_NIGHT, ThemeStyle.AURORA_GOLD, ThemeStyle.OBSIDIAN)
+                styles.forEach { style ->
+                    val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
+                    val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
+                    val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
+                    val locked = premium && !isTopDonor
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
+                            .background(if (currentThemeStyle == style) colors.card else colors.surface)
+                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(12.dp))
+                            .clickable(enabled = !locked) { settingsManager.setThemeStyle(style) }
+                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(title, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, style = Typography.bodyMedium)
+                            Text(desc, color = colors.textMuted, style = Typography.bodySmall)
+                        }
+                        Text(if (locked) "TOP 3" else if (currentThemeStyle == style) "Dipakai" else if (premium) "Eksklusif" else "Gratis", color = if (locked) colors.textMuted else colors.accent, style = Typography.labelSmall)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
                 HorizontalDivider(color = colors.border, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -476,6 +535,32 @@ fun SettingsDialog(
                                 )
                             }
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Text("Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("Liquid Glass gratis untuk semua. Tema spesial tersedia untuk Top 3 Donatur.", style = Typography.bodySmall, color = colors.textMuted)
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.VIOLET_NIGHT, ThemeStyle.AURORA_GOLD, ThemeStyle.OBSIDIAN)
+                styles.forEach { style ->
+                    val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
+                    val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
+                    val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
+                    val locked = premium && !isTopDonor
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
+                            .background(if (currentThemeStyle == style) colors.card else colors.surface)
+                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(12.dp))
+                            .clickable(enabled = !locked) { settingsManager.setThemeStyle(style) }
+                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(title, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, style = Typography.bodyMedium)
+                            Text(desc, color = colors.textMuted, style = Typography.bodySmall)
+                        }
+                        Text(if (locked) "TOP 3" else if (currentThemeStyle == style) "Dipakai" else if (premium) "Eksklusif" else "Gratis", color = if (locked) colors.textMuted else colors.accent, style = Typography.labelSmall)
                     }
                 }
 
@@ -556,6 +641,32 @@ fun SettingsDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(14.dp))
+                Text("Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("Liquid Glass gratis untuk semua. Tema spesial tersedia untuk Top 3 Donatur.", style = Typography.bodySmall, color = colors.textMuted)
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.VIOLET_NIGHT, ThemeStyle.AURORA_GOLD, ThemeStyle.OBSIDIAN)
+                styles.forEach { style ->
+                    val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
+                    val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
+                    val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
+                    val locked = premium && !isTopDonor
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
+                            .background(if (currentThemeStyle == style) colors.card else colors.surface)
+                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(12.dp))
+                            .clickable(enabled = !locked) { settingsManager.setThemeStyle(style) }
+                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(title, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, style = Typography.bodyMedium)
+                            Text(desc, color = colors.textMuted, style = Typography.bodySmall)
+                        }
+                        Text(if (locked) "TOP 3" else if (currentThemeStyle == style) "Dipakai" else if (premium) "Eksklusif" else "Gratis", color = if (locked) colors.textMuted else colors.accent, style = Typography.labelSmall)
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
                 HorizontalDivider(color = colors.border, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -599,6 +710,32 @@ fun SettingsDialog(
                             uncheckedTrackColor = colors.card
                         )
                     )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Text("Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                Text("Liquid Glass gratis untuk semua. Tema spesial tersedia untuk Top 3 Donatur.", style = Typography.bodySmall, color = colors.textMuted)
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.VIOLET_NIGHT, ThemeStyle.AURORA_GOLD, ThemeStyle.OBSIDIAN)
+                styles.forEach { style ->
+                    val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
+                    val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
+                    val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
+                    val locked = premium && !isTopDonor
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
+                            .background(if (currentThemeStyle == style) colors.card else colors.surface)
+                            .border(1.dp, if (currentThemeStyle == style) colors.accent else colors.border, RoundedCornerShape(12.dp))
+                            .clickable(enabled = !locked) { settingsManager.setThemeStyle(style) }
+                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(title, color = colors.textPrimary, fontWeight = FontWeight.SemiBold, style = Typography.bodyMedium)
+                            Text(desc, color = colors.textMuted, style = Typography.bodySmall)
+                        }
+                        Text(if (locked) "TOP 3" else if (currentThemeStyle == style) "Dipakai" else if (premium) "Eksklusif" else "Gratis", color = if (locked) colors.textMuted else colors.accent, style = Typography.labelSmall)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
