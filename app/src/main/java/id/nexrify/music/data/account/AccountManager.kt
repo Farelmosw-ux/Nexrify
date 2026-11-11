@@ -12,7 +12,9 @@ data class NexUser(
     val display: String,
     /** Foto profil berupa data URL (data:image/jpeg;base64,...), atau kosong. */
     val avatar: String,
-    val createdAt: Long
+    val createdAt: Long,
+    /** Role yang ditetapkan server melalui allowlist; bukan input pengguna. */
+    val role: String = "user"
 )
 
 /**
@@ -117,12 +119,13 @@ class AccountManager private constructor(context: Context) {
         username = o.getString("username"),
         display = o.optString("display").ifBlank { o.getString("username") },
         avatar = o.optString("avatar", ""),
-        createdAt = o.optLong("createdAt", 0L)
+        createdAt = o.optLong("createdAt", 0L),
+        role = o.optString("role", "user").lowercase().takeIf { it in setOf("user", "staff", "admin") } ?: "user"
     )
 
     private fun userJson(u: NexUser) = JSONObject()
         .put("id", u.id).put("username", u.username).put("display", u.display)
-        .put("avatar", u.avatar).put("createdAt", u.createdAt)
+        .put("avatar", u.avatar).put("createdAt", u.createdAt).put("role", u.role)
 
     companion object {
         private const val KEY_TOKEN = "token"
