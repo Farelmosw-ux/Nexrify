@@ -190,7 +190,7 @@ class MainActivity : ComponentActivity() {
             }
 
             CompositionLocalProvider(LocalStrings provides strings) {
-                NexrifyTheme(themeMode = themeMode) {
+                NexrifyTheme(themeMode = themeMode, themeStyle = viewModel.themeStyle.collectAsState().value) {
                     Box(Modifier.fillMaxSize()) {
                         crashReport?.let { report ->
                             CrashReportDialog(report = report, onClose = { CrashReporter.clear(appContext); crashReport = null })
