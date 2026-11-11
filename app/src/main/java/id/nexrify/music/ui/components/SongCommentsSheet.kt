@@ -1,6 +1,8 @@
 package id.nexrify.music.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +31,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SongCommentsSheet(track: Track, onDismiss: () -> Unit) {
     val colors = NexrifyAppTheme.colors
@@ -39,10 +43,21 @@ fun SongCommentsSheet(track: Track, onDismiss: () -> Unit) {
     var error by remember { mutableStateOf("") }
     var activity by remember { mutableStateOf<List<SongCommentNotif>>(emptyList()) }
     var showActivity by remember { mutableStateOf(false) }
+    var sending by remember { mutableStateOf(false) }
+    var menuFor by remember { mutableStateOf<SongComment?>(null) }
     suspend fun refresh() { loading = true; try { comments = SongCommentsApi.list(track.id); error = "" } catch (e: Exception) { error = e.message ?: "Gagal memuat komentar" }; loading = false }
     LaunchedEffect(track.id) { refresh(); runCatching { activity = SongCommentsApi.notifications().second } }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = colors.background, contentColor = colors.textPrimary) {
-        Column(Modifier.fillMaxWidth().fillMaxHeight(.88f).padding(horizontal = 18.dp)) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = colors.background,
+            contentColor = colors.textPrimary,
+            shape = RoundedCornerShape(0.dp)
+        ) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 18.dp)) {
             Text("Komentar lagu", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
             Text("${track.title} · ${track.artist}", fontSize = 12.sp, color = colors.textSecondary, maxLines = 1)
             Spacer(Modifier.height(12.dp))
@@ -67,18 +82,34 @@ fun SongCommentsSheet(track: Track, onDismiss: () -> Unit) {
                     items(comments, key = { it.id }) { c ->
                         val isReply = c.parentId.isNotBlank()
                         Row(Modifier.fillMaxWidth().padding(start = if (isReply) 28.dp else 0.dp), verticalAlignment = Alignment.Top) {
-                            Column(Modifier.weight(1f)) {
+                            Column(
+                                Modifier.weight(1f).combinedClickable(
+                                    onClick = { },
+                                    onLongClick = { menuFor = c }
+                                )
+                            ) {
                                 Text("@${c.username}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
                                 Text(c.text, fontSize = 14.sp, color = colors.textPrimary)
                                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(SimpleDateFormat("dd MMM · HH:mm", Locale("id", "ID")).format(Date(c.ts)), fontSize = 10.sp, color = colors.textMuted)
                                     Text("Balas", Modifier.clickable { reply = c }, fontSize = 11.sp, color = colors.textSecondary)
-                                    if (c.edited) Text("diedit", fontSize = 10.sp, color = colors.textMuted)
                                 }
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(if (c.liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null, Modifier.size(20.dp).clickable { scope.launch { runCatching { SongCommentsApi.like(track.id, c.id); refresh() }.onFailure { error = it.message ?: "Gagal menyukai komentar" } } }, tint = if (c.liked) Color(0xFFE45B78) else colors.textMuted)
                                 Text(c.likes.toString(), fontSize = 10.sp, color = colors.textMuted)
+                            }
+                            DropdownMenu(expanded = menuFor?.id == c.id, onDismissRequest = { menuFor = null }) {
+                                DropdownMenuItem(text = { Text("Balas") }, onClick = { reply = c; showActivity = false; menuFor = null })
+                                if (c.uid == id.nexrify.music.data.account.AccountManager.getInstance().userId()) {
+                                    DropdownMenuItem(text = { Text("Hapus komentar") }, onClick = {
+                                        menuFor = null
+                                        scope.launch {
+                                            runCatching { SongCommentsApi.delete(track.id, c.id); refresh() }
+                                                .onFailure { error = it.message ?: "Gagal menghapus komentar" }
+                                        }
+                                    })
+                                }
                             }
                         }
                     }
@@ -91,9 +122,31 @@ fun SongCommentsSheet(track: Track, onDismiss: () -> Unit) {
             if (!showActivity) Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(value = text, onValueChange = { text = it.take(500) }, modifier = Modifier.weight(1f), placeholder = { Text("Tulis komentar...") }, shape = RoundedCornerShape(18.dp), maxLines = 4)
                 Spacer(Modifier.width(8.dp))
-                Button(onClick = { val body = text.trim(); if (body.isNotEmpty()) scope.launch { try { val sent = SongCommentsApi.send(track.id, body, reply?.id.orEmpty()); comments = comments + sent; text = ""; reply = null; refresh() } catch (e: Exception) { error = e.message ?: "Komentar gagal dikirim" } } }, enabled = text.isNotBlank()) { Text("Kirim") }
+                Button(
+                    onClick = {
+                        val body = text.trim()
+                        if (body.isNotEmpty() && !sending) {
+                            sending = true
+                            scope.launch {
+                                try {
+                                    val sent = SongCommentsApi.send(track.id, body, reply?.id.orEmpty())
+                                    comments = (comments.filterNot { it.id == sent.id } + sent)
+                                    text = ""
+                                    reply = null
+                                    refresh()
+                                } catch (e: Exception) {
+                                    error = e.message ?: "Komentar gagal dikirim"
+                                } finally {
+                                    sending = false
+                                }
+                            }
+                        }
+                    },
+                    enabled = text.isNotBlank() && !sending
+                ) { Text(if (sending) "Mengirim..." else "Kirim") }
             }
             if (error.isNotBlank() && !loading) Text(error, color = MaterialTheme.colorScheme.error, fontSize = 11.sp)
+        }
         }
     }
 }
