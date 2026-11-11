@@ -665,10 +665,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         progressJob?.cancel()
     }
 
-    fun loadTrending() {
+    fun loadTrending(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _isLoadingTrending.value = true
-            val rawShelves = repository.getHomeShelves().toMutableList()
+            try {
+            val rawShelves = repository.getHomeShelves(forceRefresh).toMutableList()
             val onRepeat = tasteManager.onRepeatTracks.value
             if (onRepeat.isNotEmpty()) {
                 rawShelves.add(0, id.nexrify.music.data.model.HomeSection(
@@ -693,6 +694,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 tracks.take(2).forEach {
                     repository.getAudioStreamUrl(it.url, settingsManager.audioQuality.value)
                 }
+            }
+            } catch (e: Exception) {
+                Log.e("NexrifyVM", "Gagal memuat beranda", e)
+            } finally {
+                _isLoadingTrending.value = false
+                _initialLoadDone.value = true
             }
         }
     }
