@@ -287,9 +287,10 @@ class MusicRepository {
         }
     }
 
-    suspend fun getHomeShelves(): List<HomeSection> = withContext(Dispatchers.IO) {
+    suspend fun getHomeShelves(forceRefresh: Boolean = false): List<HomeSection> = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         synchronized(this) {
+            if (forceRefresh) homeCache = null
             homeCache?.let { (cached, time) ->
                 if (now - time < HOME_CACHE_TTL) {
                     return@withContext cached
