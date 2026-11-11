@@ -209,17 +209,18 @@ class Strings(val english: Boolean) {
     fun noSongsFor(genre: String) = t("Nggak ada lagu buat $genre", "No songs found for $genre")
     val recentlyPlayed get() = t("Baru diputar", "Recently played")
     val favoriteSongs get() = t("Lagu favorit", "Favorite songs")
-    fun sectionTitle(raw: String) = when (raw) {
-        "Lagi Sering Kamu Putar" -> t(raw, "On repeat for you")
-        "Pilihan Cepat" -> t(raw, "Quick picks")
-        "Lagu Trending" -> t(raw, "Trending songs")
-        "Video Musik Terbaru" -> t(raw, "Latest Music Videos")
-        "Mix Lagu" -> t(raw, "Music Mixes")
-        "Music Videos" -> t(raw, "Music Videos")
-        "Mixes" -> t("Mixes", "Music Mixes")
-        "Latest Music Videos" -> t("Video Musik Terbaru", raw)
-        "Music Mix" -> t("Mix Lagu", raw)
-        else -> raw
+    fun sectionTitle(raw: String): String {
+        // Normalisasi variasi kapitalisasi/judul dari API agar teks Indonesia
+        // tidak muncul saat bahasa aplikasi menggunakan English.
+        val key = raw.trim().lowercase().replace(Regex("\\s+"), " ")
+        return when (key) {
+            "lagi sering kamu putar", "on repeat for you" -> t("Lagi Sering Kamu Putar", "On repeat for you")
+            "pilihan cepat", "pilihan untukmu", "quick picks", "picks for you" -> t("Pilihan Cepat", "Quick picks")
+            "lagu trending", "trending songs" -> t("Lagu Trending", "Trending songs")
+            "video musik terbaru", "latest music videos", "music videos" -> t("Video Musik Terbaru", "Latest Music Videos")
+            "mix lagu", "music mix", "music mixes", "mixes" -> t("Mix Lagu", "Music Mixes")
+            else -> raw
+        }
     }
     fun sectionSubtitle(raw: String) = when (raw) {
         "Berdasarkan selera musikmu" -> t(raw, "Based on your taste")
