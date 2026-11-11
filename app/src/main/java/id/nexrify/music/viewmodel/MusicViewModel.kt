@@ -136,6 +136,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     val settingsManager = id.nexrify.music.data.settings.SettingsManager.getInstance()
     val themeMode = settingsManager.themeMode
+    val themeStyle = settingsManager.themeStyle
     val audioQuality = settingsManager.audioQuality
 
     val audioOutputManager = id.nexrify.music.data.audio.AudioOutputManager.getInstance(getApplication())
