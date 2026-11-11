@@ -213,6 +213,12 @@ class Strings(val english: Boolean) {
         "Lagi Sering Kamu Putar" -> t(raw, "On repeat for you")
         "Pilihan Cepat" -> t(raw, "Quick picks")
         "Lagu Trending" -> t(raw, "Trending songs")
+        "Video Musik Terbaru" -> t(raw, "Latest Music Videos")
+        "Mix Lagu" -> t(raw, "Music Mixes")
+        "Music Videos" -> t(raw, "Music Videos")
+        "Mixes" -> t("Mixes", "Music Mixes")
+        "Latest Music Videos" -> t("Video Musik Terbaru", raw)
+        "Music Mix" -> t("Mix Lagu", raw)
         else -> raw
     }
     fun sectionSubtitle(raw: String) = when (raw) {
