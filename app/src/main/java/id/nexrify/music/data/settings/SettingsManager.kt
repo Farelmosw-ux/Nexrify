@@ -13,6 +13,8 @@ enum class ThemeMode {
     SYSTEM, DARK, LIGHT
 }
 
+enum class ThemeStyle { CLASSIC, LIQUID_GLASS, VIOLET_NIGHT, AURORA_GOLD, OBSIDIAN }
+
 enum class AppLanguage { SYSTEM, INDONESIAN, ENGLISH }
 
 enum class AudioQuality(val title: String, val description: String) {
@@ -27,6 +29,9 @@ class SettingsManager private constructor(private val context: Context) {
 
     private val _themeMode = MutableStateFlow(loadThemeMode())
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    private val _themeStyle = MutableStateFlow(loadThemeStyle())
+    val themeStyle: StateFlow<ThemeStyle> = _themeStyle.asStateFlow()
 
     private val _audioQuality = MutableStateFlow(loadAudioQuality())
     val audioQuality: StateFlow<AudioQuality> = _audioQuality.asStateFlow()
@@ -83,6 +88,7 @@ class SettingsManager private constructor(private val context: Context) {
     /** Baca ulang semua pengaturan dari penyimpanan (setelah data akun diterapkan). */
     fun reloadFromPrefs() {
         _themeMode.value = loadThemeMode()
+        _themeStyle.value = loadThemeStyle()
         _audioQuality.value = loadAudioQuality()
         _autoTranslate.value = prefs.getBoolean(KEY_AUTO_TRANSLATE, true)
         _language.value = loadLanguage()
@@ -99,6 +105,10 @@ class SettingsManager private constructor(private val context: Context) {
             ThemeMode.SYSTEM
         }
     }
+
+    private fun loadThemeStyle(): ThemeStyle = runCatching { ThemeStyle.valueOf(prefs.getString(KEY_THEME_STYLE, ThemeStyle.CLASSIC.name) ?: ThemeStyle.CLASSIC.name) }.getOrDefault(ThemeStyle.CLASSIC)
+
+    fun setThemeStyle(style: ThemeStyle) { _themeStyle.value = style; prefs.edit().putString(KEY_THEME_STYLE, style.name).apply() }
 
     private fun loadAudioQuality(): AudioQuality {
         val name = prefs.getString(KEY_AUDIO_QUALITY, AudioQuality.HIGH.name) ?: AudioQuality.HIGH.name
@@ -217,6 +227,7 @@ class SettingsManager private constructor(private val context: Context) {
         private const val PREF_NAME = "nexrify_settings"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_AUDIO_QUALITY = "audio_quality"
+        private const val KEY_THEME_STYLE = "theme_style"
         private const val KEY_AUTO_TRANSLATE = "lyrics_auto_translate"
         private const val KEY_LANGUAGE = "app_language"
         private const val KEY_CAPSULE = "music_capsule_enabled"
