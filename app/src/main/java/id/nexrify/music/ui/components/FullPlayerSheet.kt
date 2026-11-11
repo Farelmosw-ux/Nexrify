@@ -592,9 +592,9 @@ fun PlayerScrubber(
                 viewModel.seekTo((newProgress * effectiveDuration).toLong())
             },
             colors = SliderDefaults.colors(
-                thumbColor = colors.textPrimary,
-                activeTrackColor = colors.textPrimary,
-                inactiveTrackColor = colors.border
+                thumbColor = colors.accent,
+                activeTrackColor = colors.accent,
+                inactiveTrackColor = colors.border.copy(alpha = 0.72f)
             ),
             modifier = Modifier.fillMaxWidth()
         )
