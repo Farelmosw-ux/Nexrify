@@ -111,8 +111,12 @@ fun SettingsDialog(
     val currentTheme by settingsManager.themeMode.collectAsState()
     val currentThemeStyle by settingsManager.themeStyle.collectAsState()
     val donorRanks by DonateManager.ranks.collectAsState()
-    val currentUsername = AccountManager.getInstance().user.value?.username.orEmpty()
+    val accountUser by AccountManager.getInstance().user.collectAsState()
+    val currentUsername = accountUser?.username.orEmpty()
+    val currentRole = accountUser?.role ?: "user"
+    val isPrivileged = currentRole == "staff" || currentRole == "admin"
     val isTopDonor = (donorRanks[currentUsername.lowercase()] ?: 0) in 1..3
+    val canUsePremiumThemes = isTopDonor || isPrivileged
     val currentQuality by settingsManager.audioQuality.collectAsState()
     val autoTranslate by settingsManager.autoTranslate.collectAsState()
     val currentLanguage by settingsManager.language.collectAsState()
@@ -346,7 +350,7 @@ fun SettingsDialog(
                     val title = when (style) { ThemeStyle.CLASSIC -> "Classic"; ThemeStyle.LIQUID_GLASS -> "Liquid Glass"; ThemeStyle.VIOLET_NIGHT -> "Violet Night"; ThemeStyle.AURORA_GOLD -> "Aurora Gold"; ThemeStyle.OBSIDIAN -> "Obsidian" }
                     val desc = when (style) { ThemeStyle.CLASSIC -> "Tampilan asli Nexrify"; ThemeStyle.LIQUID_GLASS -> "Panel kaca transparan"; ThemeStyle.VIOLET_NIGHT -> "Ungu gelap eksklusif"; ThemeStyle.AURORA_GOLD -> "Aksen emas premium"; ThemeStyle.OBSIDIAN -> "Hitam dengan aksen teal" }
                     val premium = style == ThemeStyle.VIOLET_NIGHT || style == ThemeStyle.AURORA_GOLD || style == ThemeStyle.OBSIDIAN
-                    val locked = premium && !isTopDonor
+                    val locked = premium && !canUsePremiumThemes
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(12.dp))
                             .background(if (currentThemeStyle == style) colors.card else colors.surface)
