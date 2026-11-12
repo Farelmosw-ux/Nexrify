@@ -35,9 +35,9 @@ fun GlassSurface(
             .background(
                 Brush.linearGradient(
                     listOf(
-                        colors.card.copy(alpha = 0.94f),
-                        colors.surface.copy(alpha = 0.82f),
-                        Color(0x222A2C44)
+                        colors.card.copy(alpha = if (Build.VERSION.SDK_INT >= 33) 0.78f else 0.92f),
+                        colors.surface.copy(alpha = if (Build.VERSION.SDK_INT >= 33) 0.68f else 0.84f),
+                        Color(0x334A6382)
                     )
                 )
             )
@@ -49,10 +49,10 @@ fun GlassSurface(
                     .fillMaxSize()
                     .background(
                         Brush.radialGradient(
-                            listOf(colors.accent.copy(alpha = 0.22f), Color.Transparent)
+                            listOf(colors.accent.copy(alpha = 0.30f), Color(0x223F6D9E), Color.Transparent)
                         )
                     )
-                    .blur(24.dp)
+                    .blur(30.dp)
             )
         }
         content()
