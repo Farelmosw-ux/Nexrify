@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.blur
 
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 
 import android.os.Build
 
@@ -67,26 +66,28 @@ fun MiniPlayer(
 ) {
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
     val glassStyle by id.nexrify.music.data.settings.SettingsManager.getInstance().themeStyle.collectAsState()
-    val isGlass = glassStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS
+    val isGlass = glassStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS ||
+        glassStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
+    val isGlassV2 = glassStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(if (isGlassV2) 24.dp else 17.dp))
             .background(
-                if (isGlass) Brush.linearGradient(
-                    listOf(Color(0xCC282D42), Color(0xAA171B29), Color(0xCC34314E))
-                ) else Brush.linearGradient(listOf(colors.card, colors.card))
+                if (isGlassV2) Brush.linearGradient(listOf(Color(0xE62C3A52), Color(0xC51A263B), Color(0xE63D4B68)))
+                else if (isGlass) Brush.linearGradient(listOf(Color(0xD52C3A4B), Color(0xC51B2938), Color(0xD53B4B5C)))
+                else Brush.linearGradient(listOf(colors.card, colors.card))
             )
-            .border(1.dp, if (isGlass) colors.accent.copy(alpha = 0.55f) else colors.border, RoundedCornerShape(14.dp))
+            .border(1.dp, if (isGlass) colors.accent.copy(alpha = if (isGlassV2) 0.72f else 0.48f) else colors.border, RoundedCornerShape(if (isGlassV2) 24.dp else 17.dp))
             .clickable { onClick() }
     ) {
         if (isGlass && Build.VERSION.SDK_INT >= 33) {
             Box(
-                Modifier.fillMaxWidth().height(10.dp)
-                    .background(Brush.radialGradient(listOf(colors.accent.copy(alpha = 0.24f), Color.Transparent)))
-                    .blur(16.dp)
+                Modifier.fillMaxWidth().height(if (isGlassV2) 18.dp else 10.dp)
+                    .background(Brush.radialGradient(listOf(colors.accent.copy(alpha = if (isGlassV2) 0.34f else 0.22f), Color.Transparent)))
+                    .blur(if (isGlassV2) 26.dp else 16.dp)
             )
         }
         LinearProgressIndicator(
