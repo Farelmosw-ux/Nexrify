@@ -13,7 +13,7 @@ enum class ThemeMode {
     SYSTEM, DARK, LIGHT
 }
 
-enum class ThemeStyle { CLASSIC, LIQUID_GLASS, VIOLET_NIGHT, AURORA_GOLD, OBSIDIAN }
+enum class ThemeStyle { CLASSIC, LIQUID_GLASS, LIQUID_GLASS_V2, VIOLET_NIGHT, AURORA_GOLD, OBSIDIAN }
 
 enum class AppLanguage { SYSTEM, INDONESIAN, ENGLISH }
 
@@ -110,7 +110,7 @@ class SettingsManager private constructor(private val context: Context) {
         val saved = runCatching {
             ThemeStyle.valueOf(prefs.getString(KEY_THEME_STYLE, ThemeStyle.CLASSIC.name) ?: ThemeStyle.CLASSIC.name)
         }.getOrDefault(ThemeStyle.CLASSIC)
-        // Tema lama yang sudah dihentikan otomatis bermigrasi ke Liquid Glass baru.
+        // Tema lama yang sudah dihentikan dipindahkan ke Liquid Glass gratis.
         return if (saved == ThemeStyle.VIOLET_NIGHT || saved == ThemeStyle.AURORA_GOLD || saved == ThemeStyle.OBSIDIAN) {
             ThemeStyle.LIQUID_GLASS
         } else saved
