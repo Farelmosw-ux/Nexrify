@@ -107,7 +107,16 @@ fun NexrifyTheme(
     val themedDark = baseColors.copy(background = Color(0xFF08090D), textPrimary = Color.White, textSecondary = Color(0xFFB9BAC5), textMuted = Color(0xFF858795), iconPrimary = Color.White, isDark = true)
     val nexrifyColors = when (themeStyle) {
         ThemeStyle.CLASSIC -> baseColors
-        ThemeStyle.LIQUID_GLASS -> themedDark.copy(surface = Color(0xB8171B28), card = Color(0x8F252A3A), border = Color(0x887F86C7), accent = Color(0xFFD5C8FF))
+        ThemeStyle.LIQUID_GLASS -> themedDark.copy(
+            background = Color(0xFF090D16), surface = Color(0xC51B2637), card = Color(0xA52A3A50),
+            border = Color(0x668BA7C8), textSecondary = Color(0xFFC0CDDC), textMuted = Color(0xFF899CB3),
+            accent = Color(0xFFB8D7F5)
+        )
+        ThemeStyle.LIQUID_GLASS_V2 -> themedDark.copy(
+            background = Color(0xFF070A12), surface = Color(0xD91A2030), card = Color(0xB5263045),
+            border = Color(0x7797B8E8), textPrimary = Color(0xFFF7F9FF), textSecondary = Color(0xFFC7D2E5),
+            textMuted = Color(0xFF8796B0), accent = Color(0xFFB9D4FF)
+        )
         ThemeStyle.VIOLET_NIGHT -> themedDark.copy(surface = Color(0xFF171224), card = Color(0xFF211936), border = Color(0xFF49356D), accent = Color(0xFFB99AFF))
         ThemeStyle.AURORA_GOLD -> themedDark.copy(surface = Color(0xFF211D16), card = Color(0xFF302719), border = Color(0xFF80652D), accent = Color(0xFFFFD477))
         ThemeStyle.OBSIDIAN -> themedDark.copy(surface = Color(0xFF101316), card = Color(0xFF1A2024), border = Color(0xFF3C5557), accent = Color(0xFF83D8CB))
