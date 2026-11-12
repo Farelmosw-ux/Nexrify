@@ -41,6 +41,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -272,9 +275,15 @@ fun ChatMessageMenu(
 @Composable
 private fun ReactionCell(emoji: String, selected: Boolean, size: androidx.compose.ui.unit.Dp, fontSize: androidx.compose.ui.unit.TextUnit, onClick: () -> Unit) {
     val colors = NexrifyAppTheme.colors
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.16f else 1f,
+        animationSpec = spring(dampingRatio = 0.48f, stiffness = 520f),
+        label = "reactionEmojiScale"
+    )
     Box(
         modifier = Modifier
             .size(size)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .background(if (selected) colors.textPrimary.copy(alpha = 0.22f) else Color.Transparent)
             .then(if (selected) Modifier.border(1.dp, colors.textPrimary.copy(alpha = 0.5f), CircleShape) else Modifier)
