@@ -299,7 +299,7 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Switch(
-                        modifier = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
+                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
                         checked = capsuleEnabled,
                         onCheckedChange = { settingsManager.setCapsuleEnabled(it) },
                         colors = SwitchDefaults.colors(
@@ -346,20 +346,24 @@ fun SettingsDialog(
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(if (S.english) "Theme style" else "Gaya tema", style = Typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                 Text(
-                    if (S.english) "The new Liquid Glass style is available to Top 3 Donors. Admins and staff get access automatically."
-                    else "Gaya Liquid Glass baru tersedia untuk Top 3 Donatur. Admin dan staff mendapat akses otomatis.",
+                    if (S.english) "Liquid Glass is free for everyone. Liquid Glass V2 is reserved for Top 3 Donors; admins and staff get instant access."
+                    else "Liquid Glass gratis untuk semua. Liquid Glass V2 khusus Top 3 Donatur; admin dan staff mendapat akses langsung.",
                     style = Typography.bodySmall,
                     color = colors.textMuted
                 )
-                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS)
+                val styles = listOf(ThemeStyle.CLASSIC, ThemeStyle.LIQUID_GLASS, ThemeStyle.LIQUID_GLASS_V2)
                 styles.forEach { style ->
-                    val title = if (style == ThemeStyle.CLASSIC) "Classic" else "Liquid Glass"
-                    val desc = if (style == ThemeStyle.CLASSIC) {
-                        if (S.english) "Original Nexrify appearance" else "Tampilan asli Nexrify"
-                    } else {
-                        if (S.english) "Frosted panels, lens highlights and glass controls" else "Panel buram, efek lensa, dan kontrol kaca"
+                    val title = when (style) {
+                        ThemeStyle.CLASSIC -> "Classic"
+                        ThemeStyle.LIQUID_GLASS -> "Liquid Glass"
+                        else -> "Liquid Glass V2"
                     }
-                    val locked = style == ThemeStyle.LIQUID_GLASS && !canUsePremiumThemes
+                    val desc = when (style) {
+                        ThemeStyle.CLASSIC -> if (S.english) "Original Nexrify appearance" else "Tampilan asli Nexrify"
+                        ThemeStyle.LIQUID_GLASS -> if (S.english) "Free glass refresh with refined cool tones" else "Kaca gratis dengan warna sejuk yang diperhalus"
+                        else -> if (S.english) "A complete iOS-inspired interface, glass navigation and lens effects" else "Antarmuka bergaya iOS, navigasi kaca, dan efek lensa"
+                    }
+                    val locked = style == ThemeStyle.LIQUID_GLASS_V2 && !canUsePremiumThemes
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp).clip(RoundedCornerShape(14.dp))
                             .background(if (currentThemeStyle == style) colors.card else colors.surface)
@@ -377,7 +381,8 @@ fun SettingsDialog(
                             when {
                                 locked -> if (S.english) "TOP DONOR" else "TOP DONATUR"
                                 currentThemeStyle == style -> if (S.english) "ACTIVE" else "AKTIF"
-                                style == ThemeStyle.LIQUID_GLASS -> if (S.english) "UNLOCKED" else "TERBUKA"
+                                style == ThemeStyle.LIQUID_GLASS -> if (S.english) "FREE" else "GRATIS"
+                                style == ThemeStyle.LIQUID_GLASS_V2 -> if (S.english) "UNLOCKED" else "TERBUKA"
                                 else -> if (S.english) "FREE" else "GRATIS"
                             },
                             color = if (locked) colors.textMuted else colors.accent,
@@ -453,7 +458,7 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Switch(
-                        modifier = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
+                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
                         checked = reminderEnabled,
                         onCheckedChange = { prayerReminder.setEnabled(it) },
                         colors = SwitchDefaults.colors(
@@ -649,7 +654,7 @@ fun SettingsDialog(
                     }
 
                     Switch(
-                        modifier = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
+                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
                         checked = autoTranslate,
                         onCheckedChange = { settingsManager.setAutoTranslate(it) },
                         colors = SwitchDefaults.colors(
