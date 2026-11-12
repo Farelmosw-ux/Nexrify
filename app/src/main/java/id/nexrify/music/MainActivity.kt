@@ -24,9 +24,10 @@ import android.content.Intent
 
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.border
+import androidx.compose.ui.draw.border
 import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -82,6 +83,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -308,7 +310,8 @@ fun MainAppScreen(viewModel: MusicViewModel) {
             containerColor = colors.background,
             bottomBar = {
                 val themeStyle by id.nexrify.music.data.settings.SettingsManager.getInstance().themeStyle.collectAsState()
-                val glassNavigation = themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS
+                val glassNavigation = themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS || themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
+                val glassNavigationV2 = themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
                 if (currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute != "donate" && currentRoute != "feedback" && currentRoute?.startsWith("chat") != true) {
                     if (glassNavigation) {
                         val navItems = Screen.bottomNavItems
@@ -317,10 +320,10 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .height(68.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(Color(0xB8171B29))
-                                .border(1.dp, Color(0x887F86C7), RoundedCornerShape(24.dp))
+                                .height(if (glassNavigationV2) 74.dp else 68.dp)
+                                .clip(RoundedCornerShape(if (glassNavigationV2) 30.dp else 24.dp))
+                                .background(if (glassNavigationV2) Brush.linearGradient(listOf(Color(0xE63B4D68), Color(0xD51A2A40), Color(0xE6445572))) else Brush.linearGradient(listOf(Color(0xD5263548), Color(0xBC172536), Color(0xD5334357))))
+                                .border(1.dp, if (glassNavigationV2) Color(0x99B9D4FF) else Color(0x668BA7C8), RoundedCornerShape(if (glassNavigationV2) 30.dp else 24.dp))
                                 .pointerInput(currentRoute, navItems.size) {
                                     var dragDistance = 0f
                                     detectHorizontalDragGestures(
@@ -351,15 +354,16 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                                     .offset(x = indicatorOffset)
                                     .width(itemWidth)
                                     .fillMaxSize()
-                                    .padding(5.dp)
-                                    .clip(RoundedCornerShape(19.dp))
-                                    .blur(if (Build.VERSION.SDK_INT >= 33) 8.dp else 0.dp)
+                                    .padding(if (glassNavigationV2) 4.dp else 5.dp)
+                                    .clip(RoundedCornerShape(if (glassNavigationV2) 25.dp else 19.dp))
+                                    .blur(if (Build.VERSION.SDK_INT >= 33) if (glassNavigationV2) 13.dp else 8.dp else 0.dp)
                                     .background(
-                                        androidx.compose.ui.graphics.Brush.linearGradient(
-                                            listOf(Color(0x665F6597), Color(0x443B405F), Color(0x665F6597))
+                                        Brush.linearGradient(
+                                            if (glassNavigationV2) listOf(Color(0x88B9D4FF), Color(0x555D83B5), Color(0x88D7E8FF))
+                                            else listOf(Color(0x668BA7C8), Color(0x443B526A), Color(0x668BA7C8))
                                         )
                                     )
-                                    .border(1.dp, Color(0x667F86C7), RoundedCornerShape(19.dp))
+                                    .border(1.dp, if (glassNavigationV2) Color(0x88D8E8FF) else Color(0x668BA7C8), RoundedCornerShape(if (glassNavigationV2) 25.dp else 19.dp))
                             )
                             Row(Modifier.fillMaxSize()) {
                                 navItems.forEach { screen ->
