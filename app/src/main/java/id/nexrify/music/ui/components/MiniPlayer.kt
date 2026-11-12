@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.blur
 
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 import android.os.Build
 
