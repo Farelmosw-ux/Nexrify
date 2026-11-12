@@ -26,7 +26,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.draw.border
+import androidx.compose.foundation.border
 import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
