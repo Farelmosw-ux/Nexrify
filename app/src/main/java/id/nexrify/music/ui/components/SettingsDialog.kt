@@ -366,7 +366,7 @@ fun SettingsDialog(
                     val desc = when (style) {
                         ThemeStyle.CLASSIC -> if (S.english) "Original Nexrify appearance" else "Tampilan asli Nexrify"
                         ThemeStyle.LIQUID_GLASS -> if (S.english) "Free glass refresh with refined cool tones" else "Kaca gratis dengan warna sejuk yang diperhalus"
-                        else -> if (S.english) "A complete iOS-inspired interface, glass navigation and lens effects" else "Antarmuka bergaya iOS, navigasi kaca, dan efek lensa"
+                        else -> if (S.english) "Aurora Violet palette, top navigation and a fully rearranged layout" else "Palet Aurora Violet, navigasi di atas, dan tata letak yang dirombak total"
                     }
                     val locked = style == ThemeStyle.LIQUID_GLASS_V2 && !canUsePremiumThemes
                     Row(
