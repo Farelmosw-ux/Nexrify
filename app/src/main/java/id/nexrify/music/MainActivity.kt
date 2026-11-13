@@ -322,8 +322,24 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .height(if (glassNavigationV2) 74.dp else 68.dp)
                                 .clip(RoundedCornerShape(if (glassNavigationV2) 30.dp else 24.dp))
-                                .background(if (glassNavigationV2) Brush.linearGradient(listOf(Color(0xE63B4D68), Color(0xD51A2A40), Color(0xE6445572))) else Brush.linearGradient(listOf(Color(0xD5263548), Color(0xBC172536), Color(0xD5334357))))
-                                .border(1.dp, if (glassNavigationV2) Color(0x99B9D4FF) else Color(0x668BA7C8), RoundedCornerShape(if (glassNavigationV2) 30.dp else 24.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        if (colors.isDark) {
+                                            listOf(
+                                                colors.card.copy(alpha = if (glassNavigationV2) 0.72f else 0.80f),
+                                                colors.surface.copy(alpha = if (glassNavigationV2) 0.66f else 0.76f),
+                                                colors.background.copy(alpha = if (glassNavigationV2) 0.82f else 0.88f)
+                                            )
+                                        } else {
+                                            listOf(
+                                                Color.White.copy(alpha = if (glassNavigationV2) 0.78f else 0.86f),
+                                                colors.card.copy(alpha = if (glassNavigationV2) 0.70f else 0.78f),
+                                                colors.surface.copy(alpha = if (glassNavigationV2) 0.84f else 0.90f)
+                                            )
+                                        }
+                                    )
+                                )
+                                .border(1.dp, colors.border.copy(alpha = if (glassNavigationV2) 0.92f else 0.72f), RoundedCornerShape(if (glassNavigationV2) 30.dp else 24.dp))
                                 .pointerInput(currentRoute, navItems.size) {
                                     var dragDistance = 0f
                                     detectHorizontalDragGestures(
@@ -344,6 +360,13 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                                     )
                                 }
                         ) {
+                            // Fine lens reflections: translucent highlights, not a solid blue tint.
+                            Box(
+                                Modifier.fillMaxWidth().height(if (glassNavigationV2) 13.dp else 8.dp)
+                                    .align(Alignment.TopCenter)
+                                    .background(Brush.horizontalGradient(listOf(Color.Transparent, colors.textPrimary.copy(alpha = if (colors.isDark) 0.10f else 0.30f), Color.Transparent)))
+                                    .blur(if (Build.VERSION.SDK_INT >= 33) if (glassNavigationV2) 18.dp else 12.dp else 4.dp)
+                            )
                             val itemWidth = maxWidth / navItems.size
                             val indicatorOffset by animateDpAsState(
                                 targetValue = itemWidth * selectedIndex,
@@ -356,15 +379,29 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                                     .fillMaxSize()
                                     .padding(if (glassNavigationV2) 4.dp else 5.dp)
                                     .clip(RoundedCornerShape(if (glassNavigationV2) 25.dp else 19.dp))
-                                    .blur(if (Build.VERSION.SDK_INT >= 33) if (glassNavigationV2) 13.dp else 8.dp else 0.dp)
                                     .background(
-                                        Brush.linearGradient(
-                                            if (glassNavigationV2) listOf(Color(0x88B9D4FF), Color(0x555D83B5), Color(0x88D7E8FF))
-                                            else listOf(Color(0x668BA7C8), Color(0x443B526A), Color(0x668BA7C8))
+                                        Brush.verticalGradient(
+                                            if (colors.isDark) listOf(
+                                                colors.textPrimary.copy(alpha = if (glassNavigationV2) 0.20f else 0.15f),
+                                                colors.card.copy(alpha = if (glassNavigationV2) 0.52f else 0.44f),
+                                                colors.textPrimary.copy(alpha = if (glassNavigationV2) 0.10f else 0.07f)
+                                            ) else listOf(
+                                                Color.White.copy(alpha = if (glassNavigationV2) 0.86f else 0.78f),
+                                                colors.card.copy(alpha = if (glassNavigationV2) 0.74f else 0.64f),
+                                                Color.White.copy(alpha = if (glassNavigationV2) 0.50f else 0.40f)
+                                            )
                                         )
                                     )
-                                    .border(1.dp, if (glassNavigationV2) Color(0x88D8E8FF) else Color(0x668BA7C8), RoundedCornerShape(if (glassNavigationV2) 25.dp else 19.dp))
-                            )
+                                    .border(1.dp, colors.border.copy(alpha = if (glassNavigationV2) 0.95f else 0.78f), RoundedCornerShape(if (glassNavigationV2) 25.dp else 19.dp))
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth().height(if (glassNavigationV2) 11.dp else 7.dp)
+                                        .padding(horizontal = 12.dp)
+                                        .align(Alignment.TopCenter)
+                                        .background(Brush.horizontalGradient(listOf(Color.Transparent, colors.textPrimary.copy(alpha = if (colors.isDark) 0.16f else 0.32f), Color.Transparent)))
+                                        .blur(if (Build.VERSION.SDK_INT >= 33) 12.dp else 4.dp)
+                                )
+                            }
                             Row(Modifier.fillMaxSize()) {
                                 navItems.forEach { screen ->
                                     val selected = currentRoute == screen.route
