@@ -299,7 +299,12 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Switch(
-                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
+                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) {
+                            val glassAlpha = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2) 0.62f else 0.42f
+                            Modifier.clip(RoundedCornerShape(18.dp))
+                                .background(colors.card.copy(alpha = glassAlpha))
+                                .border(1.dp, colors.border.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                        } else Modifier,
                         checked = capsuleEnabled,
                         onCheckedChange = { settingsManager.setCapsuleEnabled(it) },
                         colors = SwitchDefaults.colors(
@@ -458,7 +463,12 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Switch(
-                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
+                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) {
+                            val glassAlpha = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2) 0.62f else 0.42f
+                            Modifier.clip(RoundedCornerShape(18.dp))
+                                .background(colors.card.copy(alpha = glassAlpha))
+                                .border(1.dp, colors.border.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                        } else Modifier,
                         checked = reminderEnabled,
                         onCheckedChange = { prayerReminder.setEnabled(it) },
                         colors = SwitchDefaults.colors(
@@ -654,7 +664,12 @@ fun SettingsDialog(
                     }
 
                     Switch(
-                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) Modifier.clip(RoundedCornerShape(18.dp)).background(colors.card.copy(alpha = 0.45f)) else Modifier,
+                        modifier = if ((currentThemeStyle == ThemeStyle.LIQUID_GLASS || currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2)) {
+                            val glassAlpha = if (currentThemeStyle == ThemeStyle.LIQUID_GLASS_V2) 0.62f else 0.42f
+                            Modifier.clip(RoundedCornerShape(18.dp))
+                                .background(colors.card.copy(alpha = glassAlpha))
+                                .border(1.dp, colors.border.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
+                        } else Modifier,
                         checked = autoTranslate,
                         onCheckedChange = { settingsManager.setAutoTranslate(it) },
                         colors = SwitchDefaults.colors(
