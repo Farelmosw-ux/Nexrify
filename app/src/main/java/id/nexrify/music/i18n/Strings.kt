@@ -465,6 +465,16 @@ class Strings(val english: Boolean) {
 
     // Unduhan offline
     val offlineTab get() = t("Offline", "Offline")
+
+    // Pencarian di Koleksi (lagu disukai, playlist, offline)
+    val searchLikedHint get() = t("Cari di lagu disukai…", "Search liked songs…")
+    val searchPlaylistsHint get() = t("Cari playlist atau lagu di dalamnya…", "Search playlists or songs in them…")
+    val searchPlaylistSongsHint get() = t("Cari lagu di playlist ini…", "Search songs in this playlist…")
+    val searchOfflineHint get() = t("Cari di lagu offline…", "Search offline songs…")
+    val clearSearchCd get() = t("Hapus pencarian", "Clear search")
+    fun noMatchFor(q: String) = t("Nggak ada hasil buat \"$q\"", "No results for \"$q\"")
+    val noMatchHint get() = t("Coba kata kunci lain, bisa judul atau nama artis.", "Try another keyword, a title or an artist name works.")
+    fun matchCount(n: Int) = t("$n hasil", "$n results")
     val offlineTitle get() = t("Unduhan offline", "Offline downloads")
     fun offlineSummary(n: Int, size: String) = t("$n lagu, $size", "$n songs, $size")
     val offlineEmpty get() = t("Belum ada lagu offline", "No offline songs yet")
