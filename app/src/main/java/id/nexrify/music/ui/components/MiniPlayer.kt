@@ -97,14 +97,16 @@ fun MiniPlayer(
                     .blur(if (isGlassV2) 26.dp else 16.dp)
             )
         }
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp),
-            color = colors.textPrimary,
-            trackColor = colors.border
-        )
+        if (!isGlassV2) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.dp),
+                color = colors.textPrimary,
+                trackColor = colors.border
+            )
+        }
 
         Row(
             modifier = Modifier
@@ -121,7 +123,7 @@ fun MiniPlayer(
                     contentDescription = track.title,
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(RoundedCornerShape(if (isGlassV2) 15.dp else 8.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
@@ -131,23 +133,44 @@ fun MiniPlayer(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = track.title,
-                    style = Typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = track.artist,
-                    style = Typography.bodyMedium,
-                    fontWeight = FontWeight.Normal,
-                    color = colors.textMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (isGlassV2) {
+                    // V2: artis di atas, judul di bawah.
+                    Text(
+                        text = track.artist.uppercase(),
+                        style = Typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.accentAlt,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = track.title,
+                        style = Typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        text = track.title,
+                        style = Typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = track.artist,
+                        style = Typography.bodyMedium,
+                        fontWeight = FontWeight.Normal,
+                        color = colors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             if (isLoading) {
@@ -162,13 +185,32 @@ fun MiniPlayer(
                     )
                 }
             } else {
-                IconButton(onClick = onPlayPauseClick) {
-                    Icon(
-                        painter = if (isPlaying) painterResource(R.drawable.ic_nexrify_pause) else painterResource(R.drawable.ic_nexrify_play),
-                        contentDescription = if (isPlaying) S.cd("Pause") else S.cd("Play"),
-                        tint = colors.textPrimary,
-                        modifier = Modifier.size(26.dp)
-                    )
+                if (isGlassV2) {
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(Brush.linearGradient(listOf(colors.accent, colors.accentAlt)))
+                            .clickable { onPlayPauseClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = if (isPlaying) painterResource(R.drawable.ic_nexrify_pause) else painterResource(R.drawable.ic_nexrify_play),
+                            contentDescription = if (isPlaying) S.cd("Pause") else S.cd("Play"),
+                            tint = colors.background,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                } else {
+                    IconButton(onClick = onPlayPauseClick) {
+                        Icon(
+                            painter = if (isPlaying) painterResource(R.drawable.ic_nexrify_pause) else painterResource(R.drawable.ic_nexrify_play),
+                            contentDescription = if (isPlaying) S.cd("Pause") else S.cd("Play"),
+                            tint = colors.textPrimary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
             }
 
@@ -191,6 +233,16 @@ fun MiniPlayer(
                         modifier = Modifier.size(24.dp)
                     )
                 }
+            }
+        }
+        if (isGlassV2) {
+            Box(Modifier.fillMaxWidth().height(3.dp).background(colors.border.copy(alpha = 0.5f))) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .height(3.dp)
+                        .background(Brush.horizontalGradient(listOf(colors.accent, colors.accentAlt)))
+                )
             }
         }
     }
