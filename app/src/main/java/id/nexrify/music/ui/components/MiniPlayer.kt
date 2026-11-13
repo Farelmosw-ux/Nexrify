@@ -77,17 +77,23 @@ fun MiniPlayer(
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(if (isGlassV2) 24.dp else 17.dp))
             .background(
-                if (isGlassV2) Brush.linearGradient(listOf(Color(0xE62C3A52), Color(0xC51A263B), Color(0xE63D4B68)))
-                else if (isGlass) Brush.linearGradient(listOf(Color(0xD52C3A4B), Color(0xC51B2938), Color(0xD53B4B5C)))
+                if (isGlassV2) Brush.verticalGradient(
+                    if (colors.isDark) listOf(colors.card.copy(alpha = 0.76f), colors.surface.copy(alpha = 0.72f), colors.background.copy(alpha = 0.88f))
+                    else listOf(Color.White.copy(alpha = 0.88f), colors.card.copy(alpha = 0.78f), colors.surface.copy(alpha = 0.88f))
+                )
+                else if (isGlass) Brush.verticalGradient(
+                    if (colors.isDark) listOf(colors.card.copy(alpha = 0.86f), colors.surface.copy(alpha = 0.82f))
+                    else listOf(Color.White.copy(alpha = 0.92f), colors.card.copy(alpha = 0.86f))
+                )
                 else Brush.linearGradient(listOf(colors.card, colors.card))
             )
-            .border(1.dp, if (isGlass) colors.accent.copy(alpha = if (isGlassV2) 0.72f else 0.48f) else colors.border, RoundedCornerShape(if (isGlassV2) 24.dp else 17.dp))
+            .border(1.dp, if (isGlass) colors.border.copy(alpha = if (isGlassV2) 0.96f else 0.78f) else colors.border, RoundedCornerShape(if (isGlassV2) 24.dp else 17.dp))
             .clickable { onClick() }
     ) {
         if (isGlass && Build.VERSION.SDK_INT >= 33) {
             Box(
                 Modifier.fillMaxWidth().height(if (isGlassV2) 18.dp else 10.dp)
-                    .background(Brush.radialGradient(listOf(colors.accent.copy(alpha = if (isGlassV2) 0.34f else 0.22f), Color.Transparent)))
+                    .background(Brush.radialGradient(listOf(colors.textPrimary.copy(alpha = if (colors.isDark) (if (isGlassV2) 0.22f else 0.14f) else (if (isGlassV2) 0.38f else 0.26f)), Color.Transparent)))
                     .blur(if (isGlassV2) 26.dp else 16.dp)
             )
         }
