@@ -104,27 +104,51 @@ fun NexrifyTheme(
 
     val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
     val baseColors = if (isDark) DarkNexrifyColors else LightNexrifyColors
-    val themedDark = baseColors.copy(background = Color(0xFF08090D), textPrimary = Color.White, textSecondary = Color(0xFFB9BAC5), textMuted = Color(0xFF858795), iconPrimary = Color.White, isDark = true)
+    // Liquid Glass keeps the selected system/app light or dark appearance.
+    // Only surface translucency and edge highlights change between editions.
     val nexrifyColors = when (themeStyle) {
         ThemeStyle.CLASSIC -> baseColors
-        ThemeStyle.LIQUID_GLASS -> themedDark.copy(
-            background = Color(0xFF090D16), surface = Color(0xC51B2637), card = Color(0xA52A3A50),
-            border = Color(0x668BA7C8), textSecondary = Color(0xFFC0CDDC), textMuted = Color(0xFF899CB3),
-            accent = Color(0xFFB8D7F5)
+        ThemeStyle.LIQUID_GLASS -> baseColors.copy(
+            background = if (isDark) Color(0xFF090B10) else Color(0xFFF5F6F8),
+            surface = if (isDark) Color(0xC51B202A) else Color(0xDDFBFCFE),
+            card = if (isDark) Color(0xA52A303D) else Color(0xBFE8EBF1),
+            border = if (isDark) Color(0x668F9BAF) else Color(0x66939BAA),
+            textSecondary = baseColors.textSecondary,
+            textMuted = baseColors.textMuted,
+            accent = baseColors.textPrimary
         )
-        ThemeStyle.LIQUID_GLASS_V2 -> themedDark.copy(
-            background = Color(0xFF070A12), surface = Color(0xD91A2030), card = Color(0xB5263045),
-            border = Color(0x7797B8E8), textPrimary = Color(0xFFF7F9FF), textSecondary = Color(0xFFC7D2E5),
-            textMuted = Color(0xFF8796B0), accent = Color(0xFFB9D4FF)
+        ThemeStyle.LIQUID_GLASS_V2 -> baseColors.copy(
+            background = if (isDark) Color(0xFF080A0F) else Color(0xFFF1F2F5),
+            surface = if (isDark) Color(0xB51C2029) else Color(0xC9FFFFFF),
+            card = if (isDark) Color(0x8F343B49) else Color(0xA9E4E7ED),
+            border = if (isDark) Color(0x779EA8B8) else Color(0x77939BAA),
+            textPrimary = baseColors.textPrimary,
+            textSecondary = baseColors.textSecondary,
+            textMuted = baseColors.textMuted,
+            accent = baseColors.textPrimary
         )
-        ThemeStyle.VIOLET_NIGHT -> themedDark.copy(surface = Color(0xFF171224), card = Color(0xFF211936), border = Color(0xFF49356D), accent = Color(0xFFB99AFF))
-        ThemeStyle.AURORA_GOLD -> themedDark.copy(surface = Color(0xFF211D16), card = Color(0xFF302719), border = Color(0xFF80652D), accent = Color(0xFFFFD477))
-        ThemeStyle.OBSIDIAN -> themedDark.copy(surface = Color(0xFF101316), card = Color(0xFF1A2024), border = Color(0xFF3C5557), accent = Color(0xFF83D8CB))
+        ThemeStyle.VIOLET_NIGHT -> baseColors.copy(surface = Color(0xFF171224), card = Color(0xFF211936), border = Color(0xFF49356D), accent = Color(0xFFB99AFF))
+        ThemeStyle.AURORA_GOLD -> baseColors.copy(surface = Color(0xFF211D16), card = Color(0xFF302719), border = Color(0xFF80652D), accent = Color(0xFFFFD477))
+        ThemeStyle.OBSIDIAN -> baseColors.copy(surface = Color(0xFF101316), card = Color(0xFF1A2024), border = Color(0xFF3C5557), accent = Color(0xFF83D8CB))
     }
+
+    val resolvedColorScheme = colorScheme.copy(
+        primary = nexrifyColors.accent,
+        onPrimary = nexrifyColors.background,
+        secondary = nexrifyColors.textSecondary,
+        onSecondary = nexrifyColors.background,
+        background = nexrifyColors.background,
+        onBackground = nexrifyColors.textPrimary,
+        surface = nexrifyColors.surface,
+        onSurface = nexrifyColors.textPrimary,
+        surfaceVariant = nexrifyColors.card,
+        onSurfaceVariant = nexrifyColors.textSecondary,
+        outline = nexrifyColors.border
+    )
 
     CompositionLocalProvider(LocalNexrifyColors provides nexrifyColors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = resolvedColorScheme,
             typography = Typography,
             content = content
         )
