@@ -11,6 +11,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,12 +59,17 @@ fun TrackItem(
     modifier: Modifier = Modifier
 ) {
     val colors = NexrifyAppTheme.colors
+    val isV2 = NexrifyAppTheme.isV2
+    val rowShape = RoundedCornerShape(if (isV2) 20.dp else 12.dp)
+    val thumbShape = RoundedCornerShape(if (isV2) 15.dp else 8.dp)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .then(if (isV2) Modifier.padding(horizontal = 8.dp, vertical = 2.dp) else Modifier)
+            .clip(rowShape)
             .background(if (isPlaying) colors.card else Color.Transparent)
+            .then(if (isV2 && isPlaying) Modifier.border(1.dp, colors.accent.copy(alpha = 0.55f), rowShape) else Modifier)
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -77,7 +83,7 @@ fun TrackItem(
                 contentDescription = track.title,
                 modifier = Modifier
                     .size(50.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(thumbShape),
                 contentScale = ContentScale.Crop
             )
 
@@ -85,7 +91,7 @@ fun TrackItem(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp)),
+                        .background(Color.Black.copy(alpha = 0.6f), thumbShape),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
@@ -98,7 +104,7 @@ fun TrackItem(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp)),
+                        .background(Color.Black.copy(alpha = 0.5f), thumbShape),
                     contentAlignment = Alignment.Center
                 ) {
                     EqualizerAnimation()
@@ -111,33 +117,56 @@ fun TrackItem(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            Text(
-                text = track.title,
-                style = Typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = colors.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                text = track.artist,
-                style = Typography.bodyMedium,
-                fontWeight = FontWeight.Normal,
-                color = colors.textMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (isV2) {
+                // V2: artis di atas (kecil, huruf besar), judul di bawahnya.
+                Text(
+                    text = (track.artist + if (track.durationSeconds > 0) "  ·  " + track.formattedDuration else "").uppercase(),
+                    style = Typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.accentAlt,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = track.title,
+                    style = Typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            } else {
+                Text(
+                    text = track.title,
+                    style = Typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = track.artist,
+                    style = Typography.bodyMedium,
+                    fontWeight = FontWeight.Normal,
+                    color = colors.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        Text(
-            text = track.formattedDuration,
-            style = Typography.labelSmall,
-            color = colors.textSecondary,
-            modifier = Modifier.padding(end = 4.dp)
-        )
+        if (!isV2) {
+            Text(
+                text = track.formattedDuration,
+                style = Typography.labelSmall,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(end = 4.dp)
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -153,7 +182,7 @@ fun TrackItem(
             Icon(
                 imageVector = if (track.isFavorite) NexIcons.Favorite else NexIcons.FavoriteBorder,
                 contentDescription = S.cd("Favorite"),
-                tint = if (track.isFavorite) colors.textPrimary else colors.textMuted,
+                tint = if (track.isFavorite) (if (isV2) colors.accent else colors.textPrimary) else colors.textMuted,
                 modifier = Modifier.size(22.dp)
             )
         }
