@@ -46,6 +46,8 @@ import id.nexrify.music.data.download.DownloadItem
 import id.nexrify.music.data.download.DownloadState
 import id.nexrify.music.data.download.OfflineTrack
 import id.nexrify.music.i18n.S
+import id.nexrify.music.ui.components.SearchNoResult
+import id.nexrify.music.ui.components.matchesQuery
 import id.nexrify.music.ui.icons.NexIcons
 import id.nexrify.music.ui.theme.NexrifyAppTheme
 import id.nexrify.music.ui.theme.Typography
@@ -54,7 +56,7 @@ import java.util.Locale
 
 /** Tab Offline di Koleksi: unduhan berjalan, lalu daftar lagu offline dengan putar, acak, dan hapus. */
 @Composable
-fun OfflineTab(viewModel: MusicViewModel) {
+fun OfflineTab(viewModel: MusicViewModel, query: String = "") {
     val colors = NexrifyAppTheme.colors
     val offlineTracks by viewModel.offlineTracks.collectAsState()
     val downloads by viewModel.downloads.collectAsState()
@@ -64,7 +66,10 @@ fun OfflineTab(viewModel: MusicViewModel) {
     var confirmDeleteAll by remember { mutableStateOf(false) }
 
     val tracks = offlineTracks.sortedByDescending { it.downloadedAt }
-    val queueTracks = tracks.map { it.track }
+    val searching = query.isNotBlank()
+    // Daftar yang tampil mengikuti pencarian. Antrian putar ikut hasil pencarian.
+    val shownTracks = if (searching) tracks.filter { it.track.matchesQuery(query) } else tracks
+    val queueTracks = shownTracks.map { it.track }
     val totalBytes = offlineTracks.sumOf { it.sizeBytes }
 
     if (tracks.isEmpty() && downloads.isEmpty()) {
@@ -88,11 +93,11 @@ fun OfflineTab(viewModel: MusicViewModel) {
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        if (tracks.isNotEmpty()) {
+        if (tracks.isNotEmpty() && queueTracks.isNotEmpty()) {
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                     Text(
-                        text = S.offlineSummary(tracks.size, formatSize(totalBytes)),
+                        text = if (searching) S.matchCount(shownTracks.size) else S.offlineSummary(tracks.size, formatSize(totalBytes)),
                         style = Typography.bodyMedium,
                         color = colors.textMuted
                     )
@@ -106,10 +111,12 @@ fun OfflineTab(viewModel: MusicViewModel) {
                             viewModel.playTrack(shuffled.first(), shuffled)
                         }
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick = { confirmDeleteAll = true }) {
-                            Icon(NexIcons.DeleteOutline, null, tint = colors.textMuted, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(S.offlineDeleteAll, color = colors.textMuted, fontSize = 13.sp)
+                        if (!searching) {
+                            TextButton(onClick = { confirmDeleteAll = true }) {
+                                Icon(NexIcons.DeleteOutline, null, tint = colors.textMuted, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(S.offlineDeleteAll, color = colors.textMuted, fontSize = 13.sp)
+                            }
                         }
                     }
                 }
@@ -130,7 +137,11 @@ fun OfflineTab(viewModel: MusicViewModel) {
             item { Spacer(Modifier.height(8.dp)) }
         }
 
-        items(tracks, key = { it.track.id }, contentType = { "offline" }) { entry ->
+        if (searching && shownTracks.isEmpty()) {
+            item { SearchNoResult(query = query) }
+        }
+
+        items(shownTracks, key = { it.track.id }, contentType = { "offline" }) { entry ->
             OfflineRow(
                 entry = entry,
                 thumb = viewModel.offlineThumb(entry.track.id),
