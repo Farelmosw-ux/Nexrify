@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +52,10 @@ import coil.compose.AsyncImage
 import id.nexrify.music.data.model.Track
 import id.nexrify.music.data.playlist.Playlist
 import id.nexrify.music.ui.components.AddToPlaylistDialog
+import id.nexrify.music.ui.components.LibrarySearchField
+import id.nexrify.music.ui.components.SearchNoResult
+import id.nexrify.music.ui.components.matchesQuery
+import id.nexrify.music.ui.components.matchesText
 import id.nexrify.music.ui.components.TrackItem
 import id.nexrify.music.ui.theme.NexrifyAppTheme
 import id.nexrify.music.ui.theme.Typography
@@ -75,6 +81,8 @@ fun LibraryScreen(
         }
     }
     var selectedPlaylistId by remember { mutableStateOf<String?>(null) }
+    var query by remember { mutableStateOf("") }
+    LaunchedEffect(selectedTab) { query = "" }
     var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var newPlaylistName by remember { mutableStateOf("") }
@@ -99,93 +107,126 @@ fun LibraryScreen(
                 onAddTrackClick = { trackForPlaylist = it }
             )
         } else {
-            // Main Library Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = S.library,
-                        style = Typography.headlineLarge,
-                        color = colors.textPrimary
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = when (selectedTab) {
-                            0 -> S.likedCount(favorites.size)
-                            1 -> S.playlistCount(playlists.size)
-                            else -> S.offlineTitle
-                        },
-                        style = Typography.bodyMedium,
-                        color = colors.textMuted
-                    )
-                }
-
+            val isV2 = NexrifyAppTheme.isV2
+            val tabLabels = listOf(S.likedSongs, S.playlistsTab(playlists.size), S.offlineTab)
+            val countLine = when (selectedTab) {
+                0 -> S.likedCount(favorites.size)
+                1 -> S.playlistCount(playlists.size)
+                else -> S.offlineTitle
+            }
+            val searchHint = when (selectedTab) {
+                0 -> S.searchLikedHint
+                1 -> S.searchPlaylistsHint
+                else -> S.searchOfflineHint
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Segmented Pills: [ Liked Songs ]  [ Playlists ]
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (selectedTab == 0) colors.accent else colors.card)
-                        .border(1.dp, if (selectedTab == 0) colors.accent else colors.border, RoundedCornerShape(20.dp))
-                        .clickable { selectedTab = 0 }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = S.likedSongs,
-                        style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium),
-                        color = if (selectedTab == 0) colors.background else colors.textPrimary
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (selectedTab == 1) colors.accent else colors.card)
-                        .border(1.dp, if (selectedTab == 1) colors.accent else colors.border, RoundedCornerShape(20.dp))
-                        .clickable { selectedTab = 1 }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = S.playlistsTab(playlists.size),
-                        style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium),
-                        color = if (selectedTab == 1) colors.background else colors.textPrimary
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (selectedTab == 2) colors.accent else colors.card)
-                        .border(1.dp, if (selectedTab == 2) colors.accent else colors.border, RoundedCornerShape(20.dp))
-                        .clickable { selectedTab = 2 }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = S.offlineTab,
-                        style = Typography.labelMedium.copy(fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium),
-                        color = if (selectedTab == 2) colors.background else colors.textPrimary
-                    )
+            val headerBlock: @Composable () -> Unit = {
+                if (isV2) {
+                    // V2: judul tab aktif dan jumlahnya, sebagai kepala daftar tepat di atas lagu.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = tabLabels[selectedTab.coerceIn(0, 2)],
+                            style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = colors.textPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(colors.card)
+                                .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(text = countLine, style = Typography.labelMedium, color = colors.accentAlt)
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = S.library,
+                                style = Typography.headlineLarge,
+                                color = colors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = countLine,
+                                style = Typography.bodyMedium,
+                                color = colors.textMuted
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            val pillsBlock: @Composable () -> Unit = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    tabLabels.forEachIndexed { index, label ->
+                        val sel = selectedTab == index
+                        val pillShape = RoundedCornerShape(20.dp)
+                        Box(
+                            modifier = Modifier
+                                .clip(pillShape)
+                                .then(
+                                    if (isV2 && sel) Modifier.background(Brush.horizontalGradient(listOf(colors.accent, colors.accentAlt)))
+                                    else Modifier.background(if (sel) colors.accent else colors.card)
+                                )
+                                .border(1.dp, if (sel) colors.accent else colors.border, pillShape)
+                                .clickable { selectedTab = index }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                style = Typography.labelMedium.copy(fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium),
+                                color = if (sel) colors.background else colors.textPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            val searchBlock: @Composable () -> Unit = {
+                LibrarySearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    hint = searchHint,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+
+            if (isV2) {
+                // V2: pencarian paling atas, lalu tab, lalu kepala daftar (urutan kebalikan dari tema lain).
+                searchBlock()
+                Spacer(modifier = Modifier.height(12.dp))
+                pillsBlock()
+                Spacer(modifier = Modifier.height(16.dp))
+                headerBlock()
+                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                headerBlock()
+                Spacer(modifier = Modifier.height(14.dp))
+                pillsBlock()
+                Spacer(modifier = Modifier.height(12.dp))
+                searchBlock()
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
             if (selectedTab == 0) {
                 // Tab 0: Liked Songs
@@ -216,13 +257,17 @@ fun LibraryScreen(
                         }
                     }
                 } else {
+                    val shownFavorites = remember(favorites, query) { favorites.filter { it.matchesQuery(query) } }
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(favorites, key = { it.id }, contentType = { "track" }) { track ->
+                        if (shownFavorites.isEmpty()) {
+                            item { SearchNoResult(query = query) }
+                        }
+                        items(shownFavorites, key = { it.id }, contentType = { "track" }) { track ->
                             TrackItem(
                                 track = track,
                                 isPlaying = currentTrack?.id == track.id,
                                 isLoading = isLoadingTrack && currentTrack?.id == track.id,
-                                onClick = { viewModel.playTrack(track, favorites) },
+                                onClick = { viewModel.playTrack(track, shownFavorites) },
                                 onFavoriteClick = { viewModel.toggleFavorite(track) },
                                 onMoreClick = { trackForPlaylist = track }
                             )
@@ -233,11 +278,17 @@ fun LibraryScreen(
                     }
                 }
             } else if (selectedTab == 2) {
-                OfflineTab(viewModel = viewModel)
+                OfflineTab(viewModel = viewModel, query = query)
             } else {
                 // Tab 1: Playlists
+                val shownPlaylists = remember(playlists, query) {
+                    if (query.isBlank()) playlists
+                    else playlists.filter { pl ->
+                        matchesText(query, pl.name) || pl.tracks.any { it.matchesQuery(query) }
+                    }
+                }
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item {
+                    if (query.isBlank()) item {
                         // Button to create new playlist
                         Row(
                             modifier = Modifier
@@ -281,7 +332,9 @@ fun LibraryScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    if (playlists.isEmpty()) {
+                    if (query.isNotBlank() && shownPlaylists.isEmpty()) {
+                        item { SearchNoResult(query = query) }
+                    } else if (playlists.isEmpty()) {
                         item {
                             Box(
                                 modifier = Modifier
@@ -312,7 +365,7 @@ fun LibraryScreen(
                             }
                         }
                     } else {
-                        items(playlists, key = { it.id }) { playlist ->
+                        items(shownPlaylists, key = { it.id }) { playlist ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -500,6 +553,8 @@ fun PlaylistDetailView(
     onAddTrackClick: (Track) -> Unit
 ) {
     val colors = NexrifyAppTheme.colors
+    var trackQuery by remember { mutableStateOf("") }
+    val shownTracks = remember(playlist.tracks, trackQuery) { playlist.tracks.filter { it.matchesQuery(trackQuery) } }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Back Header
@@ -587,6 +642,14 @@ fun PlaylistDetailView(
                         }
                     }
                 }
+                if (playlist.tracks.isNotEmpty()) {
+                    LibrarySearchField(
+                        value = trackQuery,
+                        onValueChange = { trackQuery = it },
+                        hint = S.searchPlaylistSongsHint,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(14.dp))
             }
 
@@ -607,7 +670,10 @@ fun PlaylistDetailView(
                     }
                 }
             } else {
-                items(playlist.tracks, key = { it.id }) { track ->
+                if (shownTracks.isEmpty()) {
+                    item { SearchNoResult(query = trackQuery) }
+                }
+                items(shownTracks, key = { it.id }) { track ->
                     TrackItem(
                         track = track,
                         isPlaying = currentTrack?.id == track.id,
