@@ -96,6 +96,7 @@ fun FullPlayerSheet(
     var showSongComments by remember { mutableStateOf(false) }
 
     val colors = NexrifyAppTheme.colors
+    val isV2 = NexrifyAppTheme.isV2
 
     Column(
         modifier = modifier
@@ -109,7 +110,9 @@ fun FullPlayerSheet(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(350.dp)
+                .then(if (isV2) Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp) else Modifier)
+                .height(if (isV2) 360.dp else 350.dp)
+                .then(if (isV2) Modifier.clip(RoundedCornerShape(36.dp)) else Modifier)
         ) {
             // Ultra-HD Master Artwork
             AsyncImage(
@@ -289,14 +292,15 @@ fun FullPlayerSheet(
 
             Spacer(modifier = Modifier.height(18.dp))
 
+            val scrubberBlock: @Composable () -> Unit = {
             // Scrubber Bar
             PlayerScrubber(
                 viewModel = viewModel,
                 track = track
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
-
+            }
+            val transportBlock: @Composable () -> Unit = {
             // Primary Playback Controls: Shuffle, Rewind, Play/Pause, Fast-Forward, Repeat
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -332,7 +336,10 @@ fun FullPlayerSheet(
                     modifier = Modifier
                         .size(72.dp)
                         .clip(CircleShape)
-                        .background(colors.textPrimary),
+                        .then(
+                            if (isV2) Modifier.background(Brush.linearGradient(listOf(colors.accent, colors.accentAlt)))
+                            else Modifier.background(colors.textPrimary)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isLoading) {
@@ -383,15 +390,8 @@ fun FullPlayerSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // -------------------------------------------------------------
-            // SECONDARY UTILITIES ROW (Design #2 Component Breakdown):
-            // 1. Audio Output Device Pill ("Wired Connection" / BT)
-            // 2. Lyrics Quick-Jump / Expand
-            // 3. Add to Playlist
-            // 4. Equalizer / Settings
-            // -------------------------------------------------------------
+            }
+            val utilitiesBlock: @Composable () -> Unit = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -488,6 +488,24 @@ fun FullPlayerSheet(
                         )
                     }
                 }
+            }
+
+            }
+
+            if (isV2) {
+                // V2: urutan dibalik. Pintasan di atas, tombol putar di tengah, bilah waktu paling bawah.
+                Spacer(modifier = Modifier.height(14.dp))
+                utilitiesBlock()
+                Spacer(modifier = Modifier.height(20.dp))
+                transportBlock()
+                Spacer(modifier = Modifier.height(18.dp))
+                scrubberBlock()
+            } else {
+                scrubberBlock()
+                Spacer(modifier = Modifier.height(20.dp))
+                transportBlock()
+                Spacer(modifier = Modifier.height(20.dp))
+                utilitiesBlock()
             }
 
             Spacer(modifier = Modifier.height(16.dp))
