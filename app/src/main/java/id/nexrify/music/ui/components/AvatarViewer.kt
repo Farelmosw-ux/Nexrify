@@ -10,6 +10,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -59,14 +65,13 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
     val bitmap = remember(user?.avatar) { decodeAvatar(user?.avatar) }
     val context = LocalContext.current
-    val blockedMsg = S.screenshotBlocked
 
     DisposableEffect(Unit) {
         val activity = context.findActivity()
         var callback: Activity.ScreenCaptureCallback? = null
         if (Build.VERSION.SDK_INT >= 34 && activity != null) {
             val cb = Activity.ScreenCaptureCallback {
-                Toast.makeText(context, blockedMsg, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, S.screenshotBlocked, Toast.LENGTH_LONG).show()
             }
             try {
                 activity.registerScreenCaptureCallback(ContextCompat.getMainExecutor(context), cb)
@@ -97,42 +102,64 @@ fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.96f))
+                .background(Color.Black)
         ) {
+            // Foto kotak selebar layar, di tengah, seperti WhatsApp.
             if (bitmap != null) {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = user?.display,
-                    contentScale = ContentScale.Fit,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .aspectRatio(1f)
                         .align(Alignment.Center)
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y
-                        )
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                scale = (scale * zoom).coerceIn(1f, 4f)
-                                offset = if (scale <= 1f) Offset.Zero else offset + pan
+                        .clipToBounds()
+                ) {
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = user?.display,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                translationX = offset.x,
+                                translationY = offset.y
+                            )
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    scale = (scale * zoom).coerceIn(1f, 4f)
+                                    offset = if (scale <= 1f) Offset.Zero else offset + pan
+                                }
                             }
-                        }
-                )
+                    )
+                }
             }
-            Box(
+            // Bilah atas: tombol kembali dan nama.
+            Row(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(16.dp)
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.14f))
-                    .clickable(onClick = onDismiss),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(NexIcons.CloseCircle, contentDescription = S.cd("Back"), tint = Color.White, modifier = Modifier.size(22.dp))
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(NexIcons.ArrowBack, contentDescription = S.cd("Back"), tint = Color.White, modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = user?.display?.takeIf { it.isNotBlank() } ?: user?.username.orEmpty(),
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
             }
             Text(
                 text = S.avatarProtectedNote,
