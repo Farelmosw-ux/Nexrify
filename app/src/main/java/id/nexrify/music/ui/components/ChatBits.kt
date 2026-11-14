@@ -92,6 +92,7 @@ fun chatJoinedLabel(ts: Long): String =
     if (ts <= 0) "-" else SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(ts))
 
 fun badgeShort(code: String): String = when (code) {
+    "developer" -> "DEV"
     "admin" -> "ADMIN"
     "staff" -> "STAF"
     "early" -> "OG"
@@ -101,6 +102,7 @@ fun badgeShort(code: String): String = when (code) {
 }
 
 fun badgeFull(code: String, s: Strings): String = when (code) {
+    "developer" -> s.chatBadgeDeveloper
     "admin" -> s.chatBadgeAdmin
     "staff" -> s.chatBadgeStaff
     "early" -> s.chatBadgeEarly
@@ -157,6 +159,10 @@ fun ChatAvatar(uid: String, av: String, name: String, size: androidx.compose.ui.
 
 @Composable
 fun BadgeChip(code: String) {
+    if (isGlintRole(code)) {
+        RoleBadge(code, compact = true)
+        return
+    }
     val colors = NexrifyAppTheme.colors
     val filled = code == "staff" || code == "admin"
     Box(
