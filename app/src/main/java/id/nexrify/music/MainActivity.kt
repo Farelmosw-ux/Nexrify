@@ -507,7 +507,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                     navController = navController,
                     startDestination = Screen.Home.route,
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(
-                        bottom = if (currentRoute?.startsWith("chat") == true && currentTrack != null && !isExpanded && currentTrack!!.id != dismissedTrackId) 84.dp else 0.dp
+                        bottom = 0.dp
                     )
                 ) {
                     composable(Screen.Home.route) {
@@ -559,7 +559,7 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                 }
 
                 // Tombol kecil untuk memunculkan lagi mini player yang tadi ditutup.
-                if (currentTrack != null && !isExpanded && currentTrack!!.id == dismissedTrackId) {
+                if (currentRoute?.startsWith("chat") != true && currentTrack != null && !isExpanded && currentTrack!!.id == dismissedTrackId) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -590,8 +590,8 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                     }
                 }
 
-                // Floating MiniPlayer above bottom nav bar
-                if (currentTrack != null && !isExpanded && currentTrack!!.id != dismissedTrackId) {
+                // Floating MiniPlayer above bottom nav bar (disembunyikan di Global Chat supaya tidak menutupi kolom kirim)
+                if (currentRoute?.startsWith("chat") != true && currentTrack != null && !isExpanded && currentTrack!!.id != dismissedTrackId) {
                     MiniPlayerContainer(
                         viewModel = viewModel,
                         track = currentTrack!!,
