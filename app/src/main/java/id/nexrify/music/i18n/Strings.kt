@@ -532,6 +532,7 @@ class Strings(val english: Boolean) {
         return when (key) {
             "New Playlist" -> "Playlist baru"
             "Delete" -> "Hapus"
+            "Show player" -> "Tampilkan pemutar"
             "Back" -> "Kembali"
             "Playing" -> "Sedang diputar"
             "Login YouTube" -> "Masuk YouTube"
