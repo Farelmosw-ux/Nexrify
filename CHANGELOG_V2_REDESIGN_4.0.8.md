@@ -27,3 +27,8 @@
 - Warna V2 dikembalikan ke tampilan semula (kaca abu gelap). Navigasi utama (Beranda, Cari, Koleksi) kembali di bawah.
 - Beranda V2 dapat bar sendiri di atas: profil, chat, surat, dan pengaturan. Sapaan jadi kartu terpisah di bawahnya.
 - Foto profil bisa dibuka layar penuh (ketuk fotonya di sheet profil, bisa dijepit untuk zoom). Jendela ini aman dari screenshot dan rekam layar (FLAG_SECURE). Di Android 14 ke atas, percobaan screenshot memunculkan pesan dari app.
+
+## Revisi 3
+- Mini player yang ditutup (panah bawah) sekarang punya tombol panah atas kecil di pojok kanan bawah buat memunculkannya lagi. Ada titik kecil kalau lagu sedang diputar.
+- Tag Top Donate berkilau berjalan: Top 1 emas, Top 2 perak, Top 3 perunggu. Banner donatur peringkat 2 dan 3 juga ikut berkilau.
+- Foto profil layar penuh sekarang kotak selebar layar di tengah (gaya WhatsApp), dengan tombol kembali dan nama di atas. Tetap diproteksi dari screenshot.
