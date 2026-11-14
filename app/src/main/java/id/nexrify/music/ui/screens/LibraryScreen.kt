@@ -85,6 +85,7 @@ fun LibraryScreen(
     LaunchedEffect(selectedTab) { query = "" }
     var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showSpotifyImport by remember { mutableStateOf(false) }
     var newPlaylistName by remember { mutableStateOf("") }
 
     val colors = NexrifyAppTheme.colors
@@ -329,6 +330,42 @@ fun LibraryScreen(
                                 )
                             }
                         }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(colors.card)
+                                .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+                                .clickable { showSpotifyImport = true }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier.size(40.dp).clip(CircleShape).background(colors.accent),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = NexIcons.Download,
+                                    contentDescription = S.importSpotify,
+                                    tint = colors.background,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text(
+                                    text = S.importSpotify,
+                                    style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = colors.textPrimary
+                                )
+                                Text(
+                                    text = S.importSpotifyHint,
+                                    style = Typography.bodySmall,
+                                    color = colors.textMuted
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
@@ -416,6 +453,14 @@ fun LibraryScreen(
                 }
             }
         }
+    }
+
+    if (showSpotifyImport) {
+        id.nexrify.music.ui.components.SpotifyImportDialog(
+            viewModel = viewModel,
+            onDismiss = { showSpotifyImport = false },
+            onOpenPlaylist = { selectedPlaylistId = it }
+        )
     }
 
     if (showCreateDialog) {
