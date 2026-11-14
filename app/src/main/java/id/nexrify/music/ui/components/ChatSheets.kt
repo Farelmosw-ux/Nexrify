@@ -65,6 +65,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.nexrify.music.data.chat.CHAT_EMOJIS
+import id.nexrify.music.data.chat.ChatApi
 import id.nexrify.music.data.chat.ChatManager
 import id.nexrify.music.data.donate.DonateManager
 import id.nexrify.music.data.chat.ChatMessage
@@ -388,6 +389,7 @@ fun ChatProfileSheet(
     var bio by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
+    var showPhoto by remember { mutableStateOf(false) }
 
     LaunchedEffect(username) {
         val p = manager.profile(username)
@@ -401,11 +403,22 @@ fun ChatProfileSheet(
         dragHandle = { SheetHandleBar() }
     ) {
         val p = profile
+        if (showPhoto && p != null && p.av.isNotEmpty()) {
+            RemoteAvatarViewerDialog(
+                imageUrl = ChatApi.avatarUrl(p.uid, p.av),
+                name = p.display,
+                onDismiss = { showPhoto = false }
+            )
+        }
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 32.dp)) {
             when {
                 p != null -> {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        ChatAvatar(p.uid, p.av, p.display, 84.dp)
+                        // Ketuk foto untuk melihatnya layar penuh (kalau pengguna punya foto).
+                        ChatAvatar(
+                            p.uid, p.av, p.display, 84.dp,
+                            Modifier.clip(CircleShape).clickable(enabled = p.av.isNotEmpty()) { showPhoto = true }
+                        )
                         Spacer(Modifier.height(12.dp))
                         Text(p.display, style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
                         Text("@${p.username}", style = Typography.bodyMedium, color = colors.textMuted)
