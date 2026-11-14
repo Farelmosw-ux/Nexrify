@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import id.nexrify.music.data.model.Track
 import id.nexrify.music.data.playlist.Playlist
 import id.nexrify.music.ui.components.AddToPlaylistDialog
@@ -527,10 +528,23 @@ fun LibraryScreen(
     }
 }
 
+/** Model gambar untuk sampul playlist, atau null kalau kosong/filenya hilang (mis. akun dipakai di HP lain). */
+private fun usablePlaylistCover(url: String): Any? {
+    val u = url.trim()
+    if (u.isEmpty()) return null
+    if (u.startsWith("http://") || u.startsWith("https://")) return u
+    if (u.startsWith("file://")) {
+        val f = java.io.File(u.removePrefix("file://"))
+        return if (f.exists()) f else null
+    }
+    return null
+}
+
 @Composable
 fun PlaylistCollageIcon(playlist: Playlist, size: Int = 50) {
     val colors = NexrifyAppTheme.colors
     val tracks = playlist.tracks
+    val cover = remember(playlist.coverUrl) { usablePlaylistCover(playlist.coverUrl) }
 
     Box(
         modifier = Modifier
@@ -539,7 +553,14 @@ fun PlaylistCollageIcon(playlist: Playlist, size: Int = 50) {
             .background(colors.border),
         contentAlignment = Alignment.Center
     ) {
-        if (tracks.size >= 4) {
+        if (cover != null) {
+            AsyncImage(
+                model = cover,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else if (tracks.size >= 4) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(modifier = Modifier.weight(1f)) {
                     AsyncImage(
@@ -600,6 +621,41 @@ fun PlaylistDetailView(
     val colors = NexrifyAppTheme.colors
     var trackQuery by remember { mutableStateOf("") }
     val shownTracks = remember(playlist.tracks, trackQuery) { playlist.tracks.filter { it.matchesQuery(trackQuery) } }
+    var showCoverMenu by remember { mutableStateOf(false) }
+    val coverScope = androidx.compose.runtime.rememberCoroutineScope()
+    val coverPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) coverScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            viewModel.saveCoverFromUri(playlist.id, uri)?.let { viewModel.setPlaylistCover(playlist.id, it) }
+        }
+    }
+
+    if (showCoverMenu) {
+        id.nexrify.music.ui.components.NexDialogCard(
+            icon = NexIcons.ImagePick,
+            title = S.coverTitle,
+            onDismiss = { showCoverMenu = false }
+        ) {
+            Text(S.coverHint, style = Typography.bodyMedium, color = colors.textMuted)
+            Spacer(modifier = Modifier.height(18.dp))
+            Button(
+                onClick = { showCoverMenu = false; coverPicker.launch("image/*") },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.background)
+            ) { Text(S.coverPick, fontWeight = FontWeight.Bold) }
+            if (playlist.coverUrl.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { showCoverMenu = false; viewModel.setPlaylistCover(playlist.id, "") },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.border)
+                ) { Text(S.coverRemove, color = colors.textSecondary, fontWeight = FontWeight.SemiBold) }
+            }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Back Header
@@ -636,7 +692,26 @@ fun PlaylistDetailView(
                         .padding(horizontal = 24.dp, vertical = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    PlaylistCollageIcon(playlist = playlist, size = 180)
+                    Box {
+                        PlaylistCollageIcon(playlist = playlist, size = 180)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(colors.background.copy(alpha = 0.78f))
+                                .clickable { showCoverMenu = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = NexIcons.Edit,
+                                contentDescription = S.coverTitle,
+                                tint = colors.textPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = playlist.name,
