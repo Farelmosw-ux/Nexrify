@@ -120,7 +120,7 @@ class AccountManager private constructor(context: Context) {
         display = o.optString("display").ifBlank { o.getString("username") },
         avatar = o.optString("avatar", ""),
         createdAt = o.optLong("createdAt", 0L),
-        role = o.optString("role", "user").lowercase().takeIf { it in setOf("user", "staff", "admin") } ?: "user"
+        role = o.optString("role", "user").lowercase().takeIf { it in setOf("user", "staff", "admin", "developer") } ?: "user"
     )
 
     private fun userJson(u: NexUser) = JSONObject()
