@@ -396,6 +396,12 @@ class Strings(val english: Boolean) {
     val authTerms get() = t("Syarat", "Terms")
     val authPrivacy get() = t("Privasi", "Privacy")
     val authSyncing get() = t("Menyinkronkan data akunmu…", "Syncing your account data…")
+    val resetTitle get() = t("Lupa password?", "Forgot your password?")
+    fun resetBody(user: String) = t(
+        "Kamu sudah 3 kali salah memasukkan password untuk @$user. Reset password lewat web Nexrify sekarang?",
+        "You entered the wrong password for @$user 3 times. Reset your password on the Nexrify website now?"
+    )
+    val resetOpen get() = t("Reset password", "Reset password")
     fun accountError(code: String) = when (code) {
         "invalid_username" -> t("Username harus 3 sampai 20 karakter: huruf kecil, angka, atau garis bawah.", "Username must be 3 to 20 characters: lowercase letters, numbers, or underscore.")
         "username_taken" -> t("Username sudah dipakai. Coba yang lain.", "That username is taken. Try another one.")
