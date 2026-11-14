@@ -162,6 +162,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun createPlaylist(name: String) = playlistManager.createPlaylist(name)
     fun deletePlaylist(id: String) = playlistManager.deletePlaylist(id)
     fun renamePlaylist(id: String, name: String) = playlistManager.renamePlaylist(id, name)
+    fun setPlaylistCover(id: String, coverUrl: String) = playlistManager.setCover(id, coverUrl)
+    fun saveCoverFromUri(id: String, uri: android.net.Uri): String? = playlistManager.saveCoverFromUri(id, uri)
     fun addTrackToPlaylist(id: String, track: Track) = playlistManager.addTrackToPlaylist(id, track)
     fun removeTrackFromPlaylist(id: String, trackId: String) = playlistManager.removeTrackFromPlaylist(id, trackId)
 
@@ -174,7 +176,13 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val playlistId: String? = null,
         val playlistName: String? = null,
         val matchedCount: Int = 0,
-        val notFound: List<String> = emptyList()
+        val notFound: List<String> = emptyList(),
+        /** Info yang tampil selama proses: nama + sampul Spotify, lagu yang sedang dicocokkan, jumlah cocok sejauh ini. */
+        val sourceName: String = "",
+        val coverUrl: String = "",
+        val current: String = "",
+        val matchedSoFar: Int = 0,
+        val retrying: Boolean = false
     )
 
     private val _spotifyImport = MutableStateFlow(SpotifyImportState())
@@ -186,17 +194,28 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _spotifyImport.value = SpotifyImportState(running = true)
         spotifyImportJob = viewModelScope.launch {
             try {
-                val res = id.nexrify.music.data.importer.SpotifyImporter.import(repository, link) { d, t ->
-                    _spotifyImport.value = _spotifyImport.value.copy(done = d, total = t)
-                }
+                val res = id.nexrify.music.data.importer.SpotifyImporter.import(
+                    repository, link,
+                    onMeta = { m ->
+                        _spotifyImport.value = _spotifyImport.value.copy(sourceName = m.name, coverUrl = m.coverUrl, total = m.total)
+                    },
+                    onProgress = { d, t, cur, hit ->
+                        _spotifyImport.value = _spotifyImport.value.copy(
+                            done = d, total = t, current = cur, matchedSoFar = hit, retrying = cur.startsWith("↻")
+                        )
+                    }
+                )
                 if (res.matched.isEmpty()) {
                     _spotifyImport.value = SpotifyImportState(error = "Tidak ada lagu yang berhasil dicocokkan")
                     return@launch
                 }
-                val pl = playlistManager.createPlaylistWithTracks(res.playlistName, res.matched)
+                // Sampul Spotify ikut dibawa; kalau kosong playlist memakai kolase lagu seperti biasa.
+                val pl = playlistManager.createPlaylistWithTracks(res.playlistName, res.matched, res.coverUrl)
                 _spotifyImport.value = SpotifyImportState(
                     playlistId = pl.id,
                     playlistName = pl.name,
+                    coverUrl = pl.coverUrl,
+                    sourceName = pl.name,
                     done = res.matched.size + res.notFound.size,
                     total = res.matched.size + res.notFound.size,
                     matchedCount = res.matched.size,
@@ -720,7 +739,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoadingTrending.value = true
             try {
-            val rawShelves = repository.getHomeShelves(forceRefresh).toMutableList()
+            // Lagu yang sering dilewati tidak ikut ditampilkan lagi di beranda.
+            val rawShelves = repository.getHomeShelves(forceRefresh)
+                .map { it.copy(tracks = tasteManager.withoutDisliked(it.tracks)) }
+                .filter { it.tracks.isNotEmpty() }
+                .toMutableList()
             val onRepeat = tasteManager.onRepeatTracks.value
             if (onRepeat.isNotEmpty()) {
                 rawShelves.add(0, id.nexrify.music.data.model.HomeSection(
@@ -871,7 +894,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         if (radioTracks.isNotEmpty() && _currentTrack.value?.id == track.id) {
                             synchronized(playlistQueue) {
                                 val existingIds = playlistQueue.map { it.id }.toSet()
-                                playlistQueue.addAll(radioTracks.filter { it.id !in existingIds })
+                                playlistQueue.addAll(tasteManager.personalize(radioTracks).filter { it.id !in existingIds })
                             }
                             publishQueue()
                             val second = synchronized(playlistQueue) { playlistQueue.getOrNull(1) }
@@ -1085,7 +1108,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         if (_currentTrack.value?.id == seed.id) {
                             synchronized(playlistQueue) {
                                 val existingIds = playlistQueue.map { it.id }.toSet()
-                                playlistQueue.addAll(freshRadio.filter { it.id !in existingIds })
+                                playlistQueue.addAll(tasteManager.personalize(freshRadio).filter { it.id !in existingIds })
                             }
                             publishQueue()
                         }
@@ -1136,6 +1159,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val exists = currentFavs.any { it.id == track.id }
         if (exists) {
             currentFavs.removeAll { it.id == track.id }
+            tasteManager.recordTrackUnliked(track)
         } else {
             currentFavs.add(track.copy(isFavorite = true))
             tasteManager.recordTrackLiked(track)
