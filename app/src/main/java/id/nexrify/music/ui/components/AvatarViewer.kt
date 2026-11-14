@@ -49,6 +49,10 @@ import androidx.core.content.ContextCompat
 import id.nexrify.music.data.account.NexUser
 import id.nexrify.music.i18n.S
 import id.nexrify.music.ui.icons.NexIcons
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
+import androidx.compose.ui.graphics.FilterQuality
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -56,17 +60,11 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-/**
- * Foto profil layar penuh dengan jepit untuk zoom. Jendelanya memakai FLAG_SECURE, jadi
- * screenshot dan rekam layar diblokir sistem. Di Android 14 ke atas, percobaan tangkap layar
- * juga memunculkan pesan dari app.
- */
+/** Beri tahu pengguna kalau mencoba tangkap layar saat foto dilindungi (Android 14+). */
 @Composable
-fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
-    val bitmap = remember(user?.avatar) { decodeAvatar(user?.avatar) }
+private fun ScreenCaptureGuard() {
     val context = LocalContext.current
     val blockedMsg = S.screenshotBlocked
-
     DisposableEffect(Unit) {
         val activity = context.findActivity()
         var callback: Activity.ScreenCaptureCallback? = null
@@ -90,6 +88,17 @@ fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+/**
+ * Foto profil layar penuh dengan jepit untuk zoom. Jendelanya memakai FLAG_SECURE, jadi
+ * screenshot dan rekam layar diblokir sistem. Di Android 14 ke atas, percobaan tangkap layar
+ * juga memunculkan pesan dari app.
+ */
+@Composable
+fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
+    val bitmap = remember(user?.avatar) { decodeAvatar(user?.avatar) }
+    ScreenCaptureGuard()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -156,6 +165,99 @@ fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = user?.display?.takeIf { it.isNotBlank() } ?: user?.username.orEmpty(),
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+            Text(
+                text = S.avatarProtectedNote,
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 32.dp, vertical = 28.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Foto profil milik pengguna lain (dari server), layar penuh, resolusi asli tanpa diperkecil.
+ * Sama seperti foto sendiri: jepit untuk zoom, dan screenshot diblokir.
+ */
+@Composable
+fun RemoteAvatarViewerDialog(imageUrl: String, name: String, onDismiss: () -> Unit) {
+    ScreenCaptureGuard()
+    val context = LocalContext.current
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            securePolicy = SecureFlagPolicy.SecureOn
+        )
+    ) {
+        var scale by remember { mutableStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .align(Alignment.Center)
+                    .clipToBounds()
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .size(Size.ORIGINAL)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    filterQuality = FilterQuality.High,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                scale = (scale * zoom).coerceIn(1f, 5f)
+                                offset = if (scale <= 1f) Offset.Zero else offset + pan
+                            }
+                        }
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(NexIcons.ArrowBack, contentDescription = S.cd("Back"), tint = Color.White, modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = name,
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
