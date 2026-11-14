@@ -730,25 +730,35 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _searchResults.value = emptyList()
     }
 
-    fun search(query: String) {
+    fun search(query: String, forceRefresh: Boolean = false) {
         searchJob?.cancel()
         _suggestions.value = emptyList()
         if (query.isBlank()) {
             _searchResults.value = emptyList()
+            _isSearching.value = false
             return
         }
         searchJob = viewModelScope.launch {
             _isSearching.value = true
-            val results = repository.searchTracks(query)
-            _searchResults.value = results
-            _isSearching.value = false
+            try {
+                val results = repository.searchTracks(query, forceRefresh)
+                _searchResults.value = results
 
-            // Pre-warm audio URLs for top 2 search results in background
-            launch(Dispatchers.IO) {
-                delay(1500)
-                results.take(2).forEach {
-                    repository.getAudioStreamUrl(it.url, settingsManager.audioQuality.value)
+                // Pre-warm audio URLs for top 2 search results in background
+                launch(Dispatchers.IO) {
+                    delay(1500)
+                    results.take(2).forEach {
+                        repository.getAudioStreamUrl(it.url, settingsManager.audioQuality.value)
+                    }
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("NexrifyVM", "Pencarian gagal", e)
+                _searchResults.value = emptyList()
+            } finally {
+                // Kalau dibatalkan karena pencarian baru, biarkan pencarian baru yang mengatur indikator.
+                if (kotlinx.coroutines.currentCoroutineContext()[Job]?.isActive == true) _isSearching.value = false
             }
         }
     }
@@ -776,17 +786,25 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             _playbackPosition.value = startPositionMs
             _duration.value = if (track.durationSeconds > 0) track.durationSeconds * 1000L else 0L
 
-            if (newQueue.isNotEmpty() && newQueue !== playlistQueue) {
-                playlistQueue.clear()
-                playlistQueue.addAll(newQueue)
-                currentIndex = playlistQueue.indexOfFirst { it.id == track.id }
-            } else if (currentIndex == -1 || playlistQueue.getOrNull(currentIndex)?.id != track.id) {
-                val idx = playlistQueue.indexOfFirst { it.id == track.id }
-                if (idx != -1) {
-                    currentIndex = idx
-                } else if (playlistQueue.isEmpty()) {
-                    playlistQueue.add(track)
-                    currentIndex = 0
+            synchronized(playlistQueue) {
+                if (newQueue.isNotEmpty() && newQueue !== playlistQueue) {
+                    val copy = newQueue.toList()
+                    playlistQueue.clear()
+                    playlistQueue.addAll(copy)
+                    currentIndex = playlistQueue.indexOfFirst { it.id == track.id }
+                    if (currentIndex == -1) {
+                        // Lagu yang diputar tidak ada di antrian baru: jangan biarkan indeks -1.
+                        playlistQueue.add(0, track)
+                        currentIndex = 0
+                    }
+                } else if (currentIndex == -1 || playlistQueue.getOrNull(currentIndex)?.id != track.id) {
+                    val idx = playlistQueue.indexOfFirst { it.id == track.id }
+                    if (idx != -1) {
+                        currentIndex = idx
+                    } else if (playlistQueue.isEmpty()) {
+                        playlistQueue.add(track)
+                        currentIndex = 0
+                    }
                 }
             }
 
@@ -798,13 +816,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 launch(Dispatchers.IO) {
                     try {
                         val radioTracks = repository.getRadioTracks(track.id)
-                        if (radioTracks.isNotEmpty()) {
-                            val existingIds = playlistQueue.map { it.id }.toSet()
-                            val freshTracks = radioTracks.filter { it.id !in existingIds }
-                            playlistQueue.addAll(freshTracks)
+                        // Lagu sudah ganti selagi radio dimuat: jangan tempelkan radio lagu lama ke antrian baru.
+                        if (radioTracks.isNotEmpty() && _currentTrack.value?.id == track.id) {
+                            synchronized(playlistQueue) {
+                                val existingIds = playlistQueue.map { it.id }.toSet()
+                                playlistQueue.addAll(radioTracks.filter { it.id !in existingIds })
+                            }
                             publishQueue()
-                            if (playlistQueue.size > 1) {
-                                repository.getAudioStreamUrl(playlistQueue[1].url, settingsManager.audioQuality.value)
+                            val second = synchronized(playlistQueue) { playlistQueue.getOrNull(1) }
+                            if (second != null) {
+                                repository.getAudioStreamUrl(second.url, settingsManager.audioQuality.value)
                             }
                         }
                     } catch (e: Exception) {
@@ -826,6 +847,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                             durationSeconds = track.durationSeconds,
                             autoTranslate = false
                         )
+                        // Lagu sudah ganti selagi lirik dimuat: buang hasil lama.
+                        if (_currentTrack.value?.id != track.id) return@launch
                         _currentLyrics.value = data
                         _isLoadingLyrics.value = false
 
@@ -836,6 +859,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                                 _currentLyrics.value = translated
                             }
                         }
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Log.e("NexrifyVM", "Lyrics load error: ${e.message}")
                         _isLoadingLyrics.value = false
@@ -972,10 +997,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val current = _currentTrack.value
         if (current != null && trackStartTime > 0L) {
             val playedSec = (System.currentTimeMillis() - trackStartTime) / 1000L
+            // Putaran lagu sudah dicatat saat pemutaran dimulai (onIsPlayingChanged); di sini cukup catat skip.
             if (playedSec in 1..14) {
                 tasteManager.recordTrackSkipped(current)
-            } else if (playedSec >= 25) {
-                tasteManager.recordTrackPlayed(current)
             }
         }
         if (_repeatMode.value == Player.REPEAT_MODE_ONE) {
@@ -985,7 +1009,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val nextIndex = if (!network.isOnline()) {
             nextOfflineIndex()
         } else if (_isShuffle.value) {
-            (0 until playlistQueue.size).random()
+            // Acak tapi jangan memilih lagu yang sedang diputar.
+            val others = (0 until playlistQueue.size).filter { it != currentIndex }
+            if (others.isNotEmpty()) others.random()
+            else if (_repeatMode.value == Player.REPEAT_MODE_ALL) 0 else -1
         } else if (currentIndex + 1 < playlistQueue.size) {
             currentIndex + 1
         } else if (_repeatMode.value == Player.REPEAT_MODE_ALL) {
@@ -1004,10 +1031,13 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 viewModelScope.launch(Dispatchers.IO) {
                     try {
                         val freshRadio = repository.getRadioTracks(seed.id)
-                        val existingIds = playlistQueue.map { it.id }.toSet()
-                        val toAdd = freshRadio.filter { it.id !in existingIds }
-                        playlistQueue.addAll(toAdd)
-                        publishQueue()
+                        if (_currentTrack.value?.id == seed.id) {
+                            synchronized(playlistQueue) {
+                                val existingIds = playlistQueue.map { it.id }.toSet()
+                                playlistQueue.addAll(freshRadio.filter { it.id !in existingIds })
+                            }
+                            publishQueue()
+                        }
                     } catch (_: Exception) {}
                 }
             }
@@ -1019,13 +1049,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun skipPrevious() {
         if (playlistQueue.isEmpty()) return
-        val current = _currentTrack.value
-        if (current != null && trackStartTime > 0L) {
-            val playedSec = (System.currentTimeMillis() - trackStartTime) / 1000L
-            if (playedSec >= 25) {
-                tasteManager.recordTrackPlayed(current)
-            }
-        }
         val prevIndex = if (!network.isOnline()) {
             prevOfflineIndex()
         } else if (currentIndex - 1 >= 0) {
