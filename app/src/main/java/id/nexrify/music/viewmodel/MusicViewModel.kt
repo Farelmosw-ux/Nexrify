@@ -165,6 +165,57 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun addTrackToPlaylist(id: String, track: Track) = playlistManager.addTrackToPlaylist(id, track)
     fun removeTrackFromPlaylist(id: String, trackId: String) = playlistManager.removeTrackFromPlaylist(id, trackId)
 
+    // ---- Import playlist Spotify -> YouTube Music/Nexrify ----
+    data class SpotifyImportState(
+        val running: Boolean = false,
+        val done: Int = 0,
+        val total: Int = 0,
+        val error: String? = null,
+        val playlistId: String? = null,
+        val playlistName: String? = null,
+        val matchedCount: Int = 0,
+        val notFound: List<String> = emptyList()
+    )
+
+    private val _spotifyImport = MutableStateFlow(SpotifyImportState())
+    val spotifyImport = _spotifyImport.asStateFlow()
+    private var spotifyImportJob: Job? = null
+
+    fun importSpotifyPlaylist(link: String) {
+        if (_spotifyImport.value.running) return
+        _spotifyImport.value = SpotifyImportState(running = true)
+        spotifyImportJob = viewModelScope.launch {
+            try {
+                val res = id.nexrify.music.data.importer.SpotifyImporter.import(repository, link) { d, t ->
+                    _spotifyImport.value = _spotifyImport.value.copy(done = d, total = t)
+                }
+                if (res.matched.isEmpty()) {
+                    _spotifyImport.value = SpotifyImportState(error = "Tidak ada lagu yang berhasil dicocokkan")
+                    return@launch
+                }
+                val pl = playlistManager.createPlaylistWithTracks(res.playlistName, res.matched)
+                _spotifyImport.value = SpotifyImportState(
+                    playlistId = pl.id,
+                    playlistName = pl.name,
+                    done = res.matched.size + res.notFound.size,
+                    total = res.matched.size + res.notFound.size,
+                    matchedCount = res.matched.size,
+                    notFound = res.notFound.map { (it.artist + " - " + it.title).trim(' ', '-') }
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _spotifyImport.value = SpotifyImportState()
+                throw e
+            } catch (e: id.nexrify.music.data.importer.SpotifyImporter.ImportException) {
+                _spotifyImport.value = SpotifyImportState(error = e.message)
+            } catch (e: Exception) {
+                _spotifyImport.value = SpotifyImportState(error = "Gagal import: " + (e.message ?: "kesalahan jaringan"))
+            }
+        }
+    }
+
+    fun cancelSpotifyImport() { spotifyImportJob?.cancel() }
+    fun resetSpotifyImport() { _spotifyImport.value = SpotifyImportState() }
+
     fun playPlaylist(playlist: id.nexrify.music.data.playlist.Playlist, startTrack: Track? = null, shuffle: Boolean = false) {
         if (playlist.tracks.isEmpty()) return
         val list = if (shuffle) playlist.tracks.shuffled() else playlist.tracks
