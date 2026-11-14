@@ -93,7 +93,7 @@ fun ChatGroupSheet(onOpenProfile: (String) -> Unit, onDismiss: () -> Unit) {
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) scope.launch {
-            val data = withContext(Dispatchers.IO) { runCatching { toAvatarDataUrl(context, uri) }.getOrNull() }
+            val data = withContext(Dispatchers.IO) { runCatching { toAvatarDataUrl(context, uri, sidePx = 512, maxChars = 130_000) }.getOrNull() }
             if (data == null) NexNotifier.warning(currentStrings().chatPhotoInvalid, currentStrings().chatGroupInfo) else newPhoto = data
         }
     }
