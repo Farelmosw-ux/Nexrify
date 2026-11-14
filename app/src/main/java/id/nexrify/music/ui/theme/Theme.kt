@@ -125,18 +125,15 @@ fun NexrifyTheme(
             textMuted = baseColors.textMuted,
             accent = baseColors.textPrimary
         )
-        // V2: palet "Aurora Violet", ungu malam dengan aksen violet dan teal.
         ThemeStyle.LIQUID_GLASS_V2 -> baseColors.copy(
-            background = if (isDark) Color(0xFF0A0712) else Color(0xFFF6F3FF),
-            surface = if (isDark) Color(0xCC17112A) else Color(0xE6FFFFFF),
-            card = if (isDark) Color(0x99261C45) else Color(0xB8EAE3FF),
-            border = if (isDark) Color(0x6670589F) else Color(0x667C69C9),
-            textPrimary = if (isDark) Color(0xFFF5F2FF) else Color(0xFF1A1233),
-            textSecondary = if (isDark) Color(0xFF9A90B8) else Color(0xFF6B6485),
-            textMuted = if (isDark) Color(0xFFB7AED2) else Color(0xFF8E87A8),
-            iconPrimary = if (isDark) Color(0xFFF5F2FF) else Color(0xFF1A1233),
-            accent = if (isDark) Color(0xFFA78BFA) else Color(0xFF6D4AFF),
-            accentAlt = if (isDark) Color(0xFF5EEAD4) else Color(0xFF0E9F94)
+            background = if (isDark) Color(0xFF080A0F) else Color(0xFFF1F2F5),
+            surface = if (isDark) Color(0xB51C2029) else Color(0xC9FFFFFF),
+            card = if (isDark) Color(0x8F343B49) else Color(0xA9E4E7ED),
+            border = if (isDark) Color(0x779EA8B8) else Color(0x77939BAA),
+            textPrimary = baseColors.textPrimary,
+            textSecondary = baseColors.textSecondary,
+            textMuted = baseColors.textMuted,
+            accent = baseColors.textPrimary
         )
         ThemeStyle.VIOLET_NIGHT -> baseColors.copy(surface = Color(0xFF171224), card = Color(0xFF211936), border = Color(0xFF49356D), accent = Color(0xFFB99AFF))
         ThemeStyle.AURORA_GOLD -> baseColors.copy(surface = Color(0xFF211D16), card = Color(0xFF302719), border = Color(0xFF80652D), accent = Color(0xFFFFD477))
