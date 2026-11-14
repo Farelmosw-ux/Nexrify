@@ -172,19 +172,36 @@ fun EditProfileDialog(onDismiss: () -> Unit) {
     }
 }
 
-/** Ambil foto dari galeri, potong jadi persegi 256 px, simpan sebagai JPEG kecil dalam bentuk data URL. */
-internal fun toAvatarDataUrl(context: android.content.Context, uri: Uri): String {
+/** Sisi foto profil (px). 1080 px supaya tetap tajam saat dibuka layar penuh. */
+private const val AVATAR_SIDE_PX = 1080
+/** Batas panjang data URL; harus sama dengan batas di server (api/auth.js). */
+private const val AVATAR_MAX_CHARS = 450_000
+
+/** Ambil foto dari galeri, potong jadi persegi (maks. 1080 px, tidak diperbesar), simpan sebagai JPEG HD dalam bentuk data URL. */
+internal fun toAvatarDataUrl(
+    context: android.content.Context,
+    uri: Uri,
+    sidePx: Int = AVATAR_SIDE_PX,
+    maxChars: Int = AVATAR_MAX_CHARS
+): String {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
     var sample = 1
-    while (minOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 256) sample *= 2
+    while (minOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= sidePx) sample *= 2
     val decoded = context.contentResolver.openInputStream(uri)?.use {
         BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
     } ?: error("decode")
     val side = minOf(decoded.width, decoded.height)
     val square = Bitmap.createBitmap(decoded, (decoded.width - side) / 2, (decoded.height - side) / 2, side, side)
-    val scaled = Bitmap.createScaledBitmap(square, 256, 256, true)
-    val out = ByteArrayOutputStream()
-    scaled.compress(Bitmap.CompressFormat.JPEG, 82, out)
-    return "data:image/jpeg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+    val target = minOf(side, sidePx)
+    val scaled = if (target == side) square else Bitmap.createScaledBitmap(square, target, target, true)
+    // Mulai dari kualitas tinggi, turunkan bertahap kalau hasilnya melewati batas server.
+    var result = ""
+    for (quality in intArrayOf(92, 86, 80, 72, 64, 55)) {
+        val out = ByteArrayOutputStream()
+        scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
+        result = "data:image/jpeg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+        if (result.length <= maxChars) break
+    }
+    return result
 }
