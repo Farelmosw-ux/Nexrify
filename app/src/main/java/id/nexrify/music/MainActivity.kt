@@ -305,34 +305,16 @@ fun MainAppScreen(viewModel: MusicViewModel) {
 
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
 
-    // V2 memindahkan navigasi ke atas layar, jadi bar bawah dilewati untuk tema ini.
-    val activeThemeStyle by id.nexrify.music.data.settings.SettingsManager.getInstance().themeStyle.collectAsState()
-    val isV2Nav = activeThemeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
     val showNav = currentRoute?.startsWith(Screen.SearchPage.BASE) != true && currentRoute != "mailbox" && currentRoute != "donate" && currentRoute != "feedback" && currentRoute?.startsWith("chat") != true
 
     Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
         Scaffold(
             containerColor = colors.background,
-            topBar = {
-                if (isV2Nav && showNav) {
-                    id.nexrify.music.ui.components.V2TopNav(
-                        currentRoute = currentRoute,
-                        items = Screen.bottomNavItems,
-                        onSelect = { target ->
-                            navController.navigate(target.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
-                }
-            },
             bottomBar = {
                 val themeStyle by id.nexrify.music.data.settings.SettingsManager.getInstance().themeStyle.collectAsState()
                 val glassNavigation = themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS || themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
                 val glassNavigationV2 = themeStyle == id.nexrify.music.data.settings.ThemeStyle.LIQUID_GLASS_V2
-                if (!isV2Nav && showNav) {
+                if (showNav) {
                     if (glassNavigation) {
                         val navItems = Screen.bottomNavItems
                         val selectedIndex = navItems.indexOfFirst { currentRoute == it.route }.coerceAtLeast(0)
