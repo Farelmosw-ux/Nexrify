@@ -79,7 +79,7 @@ class TasteManager private constructor(context: Context) {
 
         // Prune entries if exceeding max limit to prevent unbounded memory/disk growth
         if (trackDataMap.size > MAX_TRACK_ENTRIES) {
-            val sortedByScore = scoresMap.entries.sortedBy { it.value }
+            val sortedByScore = scoresMap.entries.filter { it.key != track.id }.sortedBy { it.value }
             val toRemoveCount = trackDataMap.size - MAX_TRACK_ENTRIES
             for (i in 0 until toRemoveCount) {
                 val entry = sortedByScore.getOrNull(i) ?: break
