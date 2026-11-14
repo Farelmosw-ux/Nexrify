@@ -106,6 +106,16 @@ class PlaylistManager private constructor(context: Context) {
     }
 
     @Synchronized
+    fun createPlaylistWithTracks(name: String, tracks: List<Track>): Playlist {
+        val trimmed = name.trim().ifBlank { "Playlist Baru" }
+        val pl = Playlist(name = trimmed, tracks = tracks.distinctBy { it.id })
+        val current = _playlists.value.toMutableList()
+        current.add(0, pl)
+        savePlaylists(current)
+        return pl
+    }
+
+    @Synchronized
     fun deletePlaylist(playlistId: String) {
         val current = _playlists.value.filter { it.id != playlistId }
         savePlaylists(current)
