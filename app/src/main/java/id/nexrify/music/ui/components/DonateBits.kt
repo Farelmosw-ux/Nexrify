@@ -65,10 +65,32 @@ fun rankStyle(rank: Int): RankStyle = when (rank) {
 @Composable
 fun TopTag(rank: Int, modifier: Modifier = Modifier, plain: Boolean = false) {
     val st = rankStyle(rank)
+    // Kilatan berjalan sesuai peringkat: 1 emas (cepat dan paling terang), 2 perak, 3 perunggu.
+    val phase by rememberInfiniteTransition(label = "toptag").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(when (rank) { 1 -> 1800; 2 -> 2400; else -> 2800 }, easing = LinearEasing),
+            RepeatMode.Restart
+        ),
+        label = "toptag-phase"
+    )
+    val glintColors = when (rank) {
+        1 -> listOf(Color(0xFFB97E12), Color(0xFFF5C242), Color(0xFFFFF1B8), Color(0xFFFFFFFF), Color(0xFFFFF1B8), Color(0xFFF5C242), Color(0xFFB97E12))
+        2 -> listOf(Color(0xFF8995A6), Color(0xFFC5CDD8), Color(0xFFFFFFFF), Color(0xFFC5CDD8), Color(0xFF8995A6))
+        else -> listOf(Color(0xFF8B5222), Color(0xFFD38C50), Color(0xFFFFD9B0), Color(0xFFD38C50), Color(0xFF8B5222))
+    }
+    val span = 90f
+    val glint = Brush.linearGradient(
+        colors = glintColors,
+        start = Offset(-span + phase * span, 0f),
+        end = Offset(phase * span, span * 0.4f),
+        tileMode = androidx.compose.ui.graphics.TileMode.Repeated
+    )
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(7.dp))
-            .then(if (plain) Modifier.background(Color.Black.copy(alpha = 0.18f)) else Modifier.background(st.brush))
+            .then(if (plain) Modifier.background(Color.Black.copy(alpha = 0.18f)) else Modifier.background(glint))
             .padding(horizontal = 5.dp, vertical = 1.5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -99,11 +121,11 @@ fun DonorBanner(top: DonorTop, onClick: () -> Unit, modifier: Modifier = Modifie
             .border(if (gold) 1.5.dp else 1.dp, st.ring.copy(alpha = if (gold) 0.9f else 0.6f), shape)
             .clickable(onClick = onClick)
     ) {
-        if (gold) {
+        run {
             Box(
                 Modifier.fillMaxSize().background(
                     Brush.linearGradient(
-                        listOf(Color.Transparent, Color.White.copy(alpha = 0.38f), Color.Transparent),
+                        listOf(Color.Transparent, Color.White.copy(alpha = if (gold) 0.38f else 0.28f), Color.Transparent),
                         start = Offset(shimmerX - 260f, 0f),
                         end = Offset(shimmerX, 220f)
                     )
