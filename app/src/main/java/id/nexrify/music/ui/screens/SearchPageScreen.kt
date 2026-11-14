@@ -112,7 +112,7 @@ fun SearchPageScreen(
 
     PullToRefreshBox(
         refreshing = isSearching,
-        onRefresh = { if (submittedQuery.isNotBlank()) viewModel.search(submittedQuery) },
+        onRefresh = { if (submittedQuery.isNotBlank()) viewModel.search(submittedQuery, forceRefresh = true) },
         modifier = modifier.fillMaxSize().background(colors.background)
     ) {
     Column(
