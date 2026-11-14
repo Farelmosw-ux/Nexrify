@@ -54,6 +54,8 @@ import id.nexrify.music.data.remote.NexrifyLinks
 import id.nexrify.music.data.settings.AppLanguage
 import id.nexrify.music.data.settings.SettingsManager
 import id.nexrify.music.i18n.S
+import id.nexrify.music.ui.components.NexConfirmDialog
+import id.nexrify.music.ui.icons.NexIcons
 import id.nexrify.music.ui.theme.FredokaFontFamily
 import id.nexrify.music.ui.theme.NexrifyAppTheme
 import id.nexrify.music.ui.theme.Typography
@@ -76,9 +78,18 @@ fun AuthScreen() {
     var showPassword by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var errorCode by remember { mutableStateOf<String?>(null) }
+    // Id reset dari server (setelah salah password 3x) dan username pemiliknya.
+    var resetId by remember { mutableStateOf<String?>(null) }
+    var resetUser by remember { mutableStateOf("") }
+    var showReset by remember { mutableStateOf(false) }
 
     fun openLink(url: String) {
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
+
+    fun openReset() {
+        val id = resetId ?: return
+        openLink("${NexrifyLinks.SITE}/$resetUser/resetpassword:$id")
     }
 
     fun submit() {
@@ -97,11 +108,17 @@ fun AuthScreen() {
                 val accounts = AccountManager.getInstance()
                 if (register) accounts.register(u, password, display.trim().ifBlank { u }) else accounts.login(u, password)
                 AccountSync.getInstance().initialSync(preferLocal = register)
+                resetId = null
                 accounts.publish()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AccountError) {
                 errorCode = e.code
+                if (e.code == "bad_credentials" && e.resetId != null) {
+                    resetId = e.resetId
+                    resetUser = u
+                    showReset = true
+                }
             } catch (e: Exception) {
                 errorCode = "server"
             } finally {
@@ -166,7 +183,7 @@ fun AuthScreen() {
             Spacer(Modifier.height(20.dp))
 
             OutlinedTextField(
-                value = username, onValueChange = { username = it.filter { c -> c.isLetterOrDigit() || c == '_' }.take(20); errorCode = null },
+                value = username, onValueChange = { username = it.lowercase().filter { c -> c in 'a'..'z' || c in '0'..'9' || c == '_' }.take(20); errorCode = null },
                 label = { Text(S.fieldUsername) }, singleLine = true, shape = RoundedCornerShape(16.dp), colors = fieldColors,
                 supportingText = if (register) { { Text(S.usernameHint, color = colors.textMuted, fontSize = 12.sp) } } else null,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next, keyboardType = KeyboardType.Ascii),
@@ -202,6 +219,13 @@ fun AuthScreen() {
                 Spacer(Modifier.height(12.dp))
                 Text(S.accountError(it), color = androidx.compose.ui.graphics.Color(0xFFFCA5A5), style = Typography.bodySmall, textAlign = TextAlign.Center)
             }
+            if (!register && resetId != null && username.trim().lowercase() == resetUser) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    S.resetOpen, color = colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { openReset() }.padding(6.dp)
+                )
+            }
 
             Spacer(Modifier.height(22.dp))
             Button(
@@ -225,6 +249,16 @@ fun AuthScreen() {
                 Text(S.authTerms, color = colors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { openLink(NexrifyLinks.TERMS) })
                 Text(S.authPrivacy, color = colors.textSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { openLink(NexrifyLinks.PRIVACY) })
             }
+        }
+        if (showReset && resetId != null) {
+            NexConfirmDialog(
+                title = S.resetTitle,
+                text = S.resetBody(resetUser),
+                confirmText = S.resetOpen,
+                onConfirm = { showReset = false; openReset() },
+                onDismiss = { showReset = false },
+                icon = NexIcons.Lock
+            )
         }
     }
 }
