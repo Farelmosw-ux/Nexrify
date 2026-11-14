@@ -70,6 +70,8 @@ fun ProfileMenuSheet(
 ) {
     val colors = NexrifyAppTheme.colors
     var showStatsDialog by remember { mutableStateOf(false) }
+    var showAvatarViewer by remember { mutableStateOf(false) }
+    val viewerUser by AccountManager.getInstance().user.collectAsState()
     var showRecentsDialog by remember { mutableStateOf(false) }
 
     val recentlyPlayed by viewModel.recentlyPlayed.collectAsState()
@@ -77,6 +79,10 @@ fun ProfileMenuSheet(
     val liveTotalPlays by viewModel.tasteManager.totalPlays.collectAsState()
     val liveUniqueArtists by viewModel.tasteManager.uniqueArtistsCount.collectAsState()
     val liveTopArtists by viewModel.tasteManager.topArtists.collectAsState()
+
+    if (showAvatarViewer) {
+        AvatarViewerDialog(user = viewerUser, onDismiss = { showAvatarViewer = false })
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -116,7 +122,13 @@ fun ProfileMenuSheet(
                     modifier = Modifier.fillMaxWidth().clickable { showEdit = true },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    NexAvatar(nexUser, 58.dp)
+                    NexAvatar(
+                        nexUser,
+                        58.dp,
+                        modifier = Modifier.clip(CircleShape).clickable {
+                            if (!nexUser?.avatar.isNullOrBlank()) showAvatarViewer = true else showEdit = true
+                        }
+                    )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -134,6 +146,10 @@ fun ProfileMenuSheet(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        if (isGlintRole(nexUser?.role)) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            RoleBadge(role = nexUser?.role.orEmpty())
+                        }
                     }
                     Text(S.editProfile, style = Typography.labelMedium, color = colors.textSecondary)
                 }
