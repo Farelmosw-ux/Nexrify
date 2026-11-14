@@ -148,19 +148,22 @@ fun HomeScreen(
     ) {
         val timeContextV2 = id.nexrify.music.data.settings.TimeContext.resolve(localNow, maghribTime)
         if (isV2) {
-            // V2: tombol aksi di atas, sapaan di bawahnya, semuanya dalam satu kartu kaca.
+            // V2: bar sendiri di atas untuk profil, chat, surat, dan pengaturan. Navigasi utama tetap di bawah.
             val unreadMailV2 by id.nexrify.music.data.mailbox.MailboxManager.getInstance().unreadCount.collectAsState()
             val chatUnreadV2 by id.nexrify.music.data.chat.ChatManager.getInstance().mentionUnread.collectAsState()
+            V2UtilityBar(
+                account = currentAccount,
+                chatUnread = chatUnreadV2,
+                mailUnread = unreadMailV2,
+                onProfile = { showProfileMenu = true },
+                onChat = onOpenChat,
+                onMail = onOpenMailbox,
+                onSettings = { showSettingsDialog = true }
+            )
             V2HomeHeader(
                 greeting = S.period(timeContextV2.period),
                 description = if (S.english) timeContextV2.descriptionEn else timeContextV2.descriptionId,
-                hint = if (maghribStatus == id.nexrify.music.data.prayer.MaghribManager.Status.NO_PERMISSION && localNow.hour in 16..18) S.maghribHomeHint else null,
-                chatUnread = chatUnreadV2,
-                mailUnread = unreadMailV2,
-                account = currentAccount,
-                onChat = onOpenChat,
-                onMail = onOpenMailbox,
-                onProfile = { showProfileMenu = true }
+                hint = if (maghribStatus == id.nexrify.music.data.prayer.MaghribManager.Status.NO_PERMISSION && localNow.hour in 16..18) S.maghribHomeHint else null
             )
         } else {
         // Greeting mengikuti jam lokal perangkat (zona waktu wilayah otomatis).
@@ -960,19 +963,9 @@ private fun MailboxTopButton(unread: Int, onClick: () -> Unit) {
 }
 
 
-/** Kepala Beranda khusus V2: tombol aksi di atas, sapaan di bawahnya, dalam satu kartu kaca. */
+/** Kartu sapaan Beranda V2. */
 @Composable
-private fun V2HomeHeader(
-    greeting: String,
-    description: String,
-    hint: String?,
-    chatUnread: Int,
-    mailUnread: Int,
-    account: UserAccount?,
-    onChat: () -> Unit,
-    onMail: () -> Unit,
-    onProfile: () -> Unit
-) {
+private fun V2HomeHeader(greeting: String, description: String, hint: String?) {
     val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
     val shape = RoundedCornerShape(30.dp)
     Column(
@@ -980,28 +973,61 @@ private fun V2HomeHeader(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .clip(shape)
-            .background(
-                androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(colors.accent.copy(alpha = 0.30f), colors.card, colors.accentAlt.copy(alpha = 0.20f))
-                )
-            )
+            .background(colors.card)
             .border(1.dp, colors.border, shape)
-            .padding(horizontal = 18.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AccountTopButton(account = account, onClick = onProfile)
-            Spacer(modifier = Modifier.weight(1f))
-            ChatTopButton(unread = chatUnread, onClick = onChat)
-            Spacer(modifier = Modifier.width(10.dp))
-            MailboxTopButton(unread = mailUnread, onClick = onMail)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
         Text(greeting, style = Typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
         Spacer(modifier = Modifier.height(4.dp))
         Text(description, style = Typography.bodyLarge, color = colors.textMuted)
         if (hint != null) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(hint, style = Typography.bodySmall, color = colors.textSecondary)
+        }
+    }
+}
+
+/** Bar khusus V2: profil di kiri, chat, surat, dan pengaturan di kanan. */
+@Composable
+private fun V2UtilityBar(
+    account: UserAccount?,
+    chatUnread: Int,
+    mailUnread: Int,
+    onProfile: () -> Unit,
+    onChat: () -> Unit,
+    onMail: () -> Unit,
+    onSettings: () -> Unit
+) {
+    val colors = id.nexrify.music.ui.theme.NexrifyAppTheme.colors
+    val shape = RoundedCornerShape(30.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(shape)
+            .background(colors.surface)
+            .border(1.dp, colors.border, shape)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AccountTopButton(account = account, onClick = onProfile)
+        Spacer(modifier = Modifier.width(10.dp))
+        Text("Nexrify", style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = colors.textPrimary)
+        Spacer(modifier = Modifier.weight(1f))
+        ChatTopButton(unread = chatUnread, onClick = onChat)
+        Spacer(modifier = Modifier.width(8.dp))
+        MailboxTopButton(unread = mailUnread, onClick = onMail)
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(colors.card)
+                .border(1.dp, colors.border, CircleShape)
+                .clickable(onClick = onSettings),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(NexIcons.Settings, contentDescription = S.cd("Settings"), tint = colors.textPrimary, modifier = Modifier.size(20.dp))
         }
     }
 }
