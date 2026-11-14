@@ -39,7 +39,7 @@ class TasteManager private constructor(context: Context) {
 
     @Synchronized
     fun recordTrackPlayed(track: Track) {
-        updateTrackScore(track, deltaScore = 3, isPlay = true)
+        updateTrackScore(track, deltaScore = PLAY_DELTA, isPlay = true)
         addToRecents(track)
         refreshOnRepeat()
         refreshStatistics()
@@ -47,7 +47,7 @@ class TasteManager private constructor(context: Context) {
 
     @Synchronized
     fun recordTrackLiked(track: Track) {
-        updateTrackScore(track, deltaScore = 5, isPlay = false)
+        updateTrackScore(track, deltaScore = LIKE_DELTA, isPlay = false)
         refreshOnRepeat()
         refreshStatistics()
     }
@@ -59,16 +59,45 @@ class TasteManager private constructor(context: Context) {
         refreshStatistics()
     }
 
+    /** Batal suka: mencabut bonus suka supaya skor tidak naik terus. */
     @Synchronized
-    fun recordTrackSkipped(track: Track) {
-        updateTrackScore(track, deltaScore = -2, isPlay = false)
+    fun recordTrackUnliked(track: Track) {
+        updateTrackScore(track, deltaScore = -LIKE_DELTA, isPlay = false)
         refreshOnRepeat()
         refreshStatistics()
     }
 
+    /**
+     * Lagu dilewati sebelum sempat didengar. Putaran sudah dihitung (+PLAY_DELTA) saat pemutaran
+     * dimulai, jadi penalti harus lebih besar dari bonus itu; kalau tidak, skip malah menambah skor.
+     * Skor boleh negatif: lagu yang berulang kali dilewati dianggap tidak disukai.
+     */
+    @Synchronized
+    fun recordTrackSkipped(track: Track) {
+        updateTrackScore(track, deltaScore = SKIP_DELTA, isPlay = false)
+        // Lagu yang dilewati bukan putaran sungguhan: jangan menggelembungkan statistik.
+        val plays = playsMap[track.id] ?: 0
+        if (plays > 0) playsMap[track.id] = plays - 1
+        removeFromRecents(track.id)
+        refreshOnRepeat()
+        refreshStatistics()
+    }
+
+    /** Skor lagu (0 kalau belum pernah dinilai). Negatif berarti cenderung tidak disukai. */
+    fun scoreOf(id: String): Int = scoresMap[id] ?: 0
+
+    fun isDisliked(id: String): Boolean = scoreOf(id) <= DISLIKE_THRESHOLD
+
+    /** Buang lagu yang tidak disukai dari daftar rekomendasi, urutan aslinya dijaga. */
+    fun withoutDisliked(tracks: List<Track>): List<Track> = tracks.filter { !isDisliked(it.id) }
+
+    /** Buang yang tidak disukai lalu naikkan lagu berskor tinggi (urutan sama tetap stabil). */
+    fun personalize(tracks: List<Track>): List<Track> =
+        withoutDisliked(tracks).sortedByDescending { scoreOf(it.id) }
+
     private fun updateTrackScore(track: Track, deltaScore: Int, isPlay: Boolean) {
         val currentScore = scoresMap[track.id] ?: 0
-        scoresMap[track.id] = maxOf(0, currentScore + deltaScore)
+        scoresMap[track.id] = (currentScore + deltaScore).coerceIn(MIN_SCORE, MAX_SCORE)
 
         if (isPlay) {
             val currentPlays = playsMap[track.id] ?: 0
@@ -79,7 +108,10 @@ class TasteManager private constructor(context: Context) {
 
         // Prune entries if exceeding max limit to prevent unbounded memory/disk growth
         if (trackDataMap.size > MAX_TRACK_ENTRIES) {
-            val sortedByScore = scoresMap.entries.filter { it.key != track.id }.sortedBy { it.value }
+            // Buang yang paling "netral" (skor mendekati 0). Skor sangat negatif ikut dijaga
+            // supaya lagu yang tidak disukai tidak lupa dan muncul lagi.
+            val sortedByScore = scoresMap.entries.filter { it.key != track.id }
+                .sortedBy { kotlin.math.abs(it.value) }
             val toRemoveCount = trackDataMap.size - MAX_TRACK_ENTRIES
             for (i in 0 until toRemoveCount) {
                 val entry = sortedByScore.getOrNull(i) ?: break
@@ -90,6 +122,29 @@ class TasteManager private constructor(context: Context) {
         }
 
         persistTasteDataAsync()
+    }
+
+    private fun removeFromRecents(id: String) {
+        val current = _recentlyPlayed.value
+        if (current.none { it.id == id }) return
+        val trimmed = current.filter { it.id != id }
+        _recentlyPlayed.value = trimmed
+        persistRecents(trimmed)
+    }
+
+    private fun persistRecents(list: List<Track>) {
+        val arr = JSONArray()
+        for (t in list) {
+            arr.put(JSONObject().apply {
+                put("id", t.id)
+                put("url", t.url)
+                put("title", t.title)
+                put("artist", t.artist)
+                put("thumbnailUrl", t.thumbnailUrl)
+                put("durationSeconds", t.durationSeconds)
+            })
+        }
+        prefs.edit().putString(KEY_RECENTS, arr.toString()).apply()
     }
 
     private fun addToRecents(track: Track) {
@@ -161,6 +216,7 @@ class TasteManager private constructor(context: Context) {
     }
 
     private fun loadDataFromPrefs() {
+        // Tiap bagian dimuat terpisah: satu bagian rusak tidak boleh menggagalkan yang lain.
         try {
             // 1. Load recents
             val recentsRaw = prefs.getString(KEY_RECENTS, "[]") ?: "[]"
@@ -180,7 +236,9 @@ class TasteManager private constructor(context: Context) {
                 )
             }
             _recentlyPlayed.value = rList
+        } catch (_: Exception) { _recentlyPlayed.value = emptyList() }
 
+        try {
             // 2. Load taste maps
             val scoresJson = JSONObject(prefs.getString(KEY_SCORES, "{}") ?: "{}")
             val playsJson = JSONObject(prefs.getString(KEY_PLAYS, "{}") ?: "{}")
@@ -189,7 +247,7 @@ class TasteManager private constructor(context: Context) {
             val sKeys = scoresJson.keys()
             while (sKeys.hasNext()) {
                 val k = sKeys.next()
-                scoresMap[k] = scoresJson.optInt(k, 0)
+                scoresMap[k] = scoresJson.optInt(k, 0).coerceIn(MIN_SCORE, MAX_SCORE)
             }
 
             val pKeys = playsJson.keys()
@@ -214,9 +272,11 @@ class TasteManager private constructor(context: Context) {
                 }
             }
 
-            refreshOnRepeat()
-            refreshStatistics()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            scoresMap.clear(); playsMap.clear(); trackDataMap.clear()
+        }
+        refreshOnRepeat()
+        refreshStatistics()
     }
 
     @Synchronized
@@ -282,6 +342,13 @@ class TasteManager private constructor(context: Context) {
         private const val KEY_RECENTS = "recents"
         private const val MAX_RECENTS = 30
         private const val MAX_TRACK_ENTRIES = 100
+        private const val PLAY_DELTA = 3
+        private const val LIKE_DELTA = 5
+        private const val SKIP_DELTA = -7
+        private const val MIN_SCORE = -30
+        private const val MAX_SCORE = 200
+        /** Skor di bawah/sama dengan ini = tidak disukai (sekitar dua kali dilewati). */
+        private const val DISLIKE_THRESHOLD = -6
 
         @Volatile
         private var INSTANCE: TasteManager? = null
