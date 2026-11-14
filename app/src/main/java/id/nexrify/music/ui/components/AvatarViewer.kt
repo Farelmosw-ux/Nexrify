@@ -65,13 +65,14 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
 fun AvatarViewerDialog(user: NexUser?, onDismiss: () -> Unit) {
     val bitmap = remember(user?.avatar) { decodeAvatar(user?.avatar) }
     val context = LocalContext.current
+    val blockedMsg = S.screenshotBlocked
 
     DisposableEffect(Unit) {
         val activity = context.findActivity()
         var callback: Activity.ScreenCaptureCallback? = null
         if (Build.VERSION.SDK_INT >= 34 && activity != null) {
             val cb = Activity.ScreenCaptureCallback {
-                Toast.makeText(context, S.screenshotBlocked, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, blockedMsg, Toast.LENGTH_LONG).show()
             }
             try {
                 activity.registerScreenCaptureCallback(ContextCompat.getMainExecutor(context), cb)
