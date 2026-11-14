@@ -68,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -555,6 +556,38 @@ fun MainAppScreen(viewModel: MusicViewModel) {
                         LibraryScreen(viewModel = viewModel)
                     }
                 }
+                }
+
+                // Tombol kecil untuk memunculkan lagi mini player yang tadi ditutup.
+                if (currentTrack != null && !isExpanded && currentTrack!!.id == dismissedTrackId) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp, bottom = 12.dp)
+                            .size(52.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(colors.surface)
+                            .border(1.dp, colors.border, androidx.compose.foundation.shape.CircleShape)
+                            .clickable { dismissedTrackId = null },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = id.nexrify.music.ui.icons.NexIcons.KeyboardArrowUp,
+                            contentDescription = S.cd("Show player"),
+                            tint = colors.textPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        if (isPlaying) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(9.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(colors.accent)
+                            )
+                        }
+                    }
                 }
 
                 // Floating MiniPlayer above bottom nav bar
