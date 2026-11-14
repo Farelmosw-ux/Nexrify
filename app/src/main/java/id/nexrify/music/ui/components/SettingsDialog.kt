@@ -114,7 +114,7 @@ fun SettingsDialog(
     val accountUser by AccountManager.getInstance().user.collectAsState()
     val currentUsername = accountUser?.username.orEmpty()
     val currentRole = accountUser?.role ?: "user"
-    val isPrivileged = currentRole == "staff" || currentRole == "admin"
+    val isPrivileged = currentRole == "staff" || currentRole == "admin" || currentRole == "developer"
     val isTopDonor = (donorRanks[currentUsername.lowercase()] ?: 0) in 1..3
     val canUsePremiumThemes = isTopDonor || isPrivileged
     val currentQuality by settingsManager.audioQuality.collectAsState()
