@@ -12,7 +12,13 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /** Kesalahan dari server akun. [code] dipetakan ke teks sesuai bahasa di UI. */
-class AccountError(val code: String, message: String = code) : Exception(message)
+class AccountError(
+    val code: String,
+    message: String = code,
+    /** Id reset sekali pakai dari server, terisi setelah salah password 3x untuk username yang sama. */
+    val resetId: String? = null,
+    val attempts: Int = 0
+) : Exception(message)
 
 /** Klien untuk akun Nexrify di nexrify.biz.id: /api/auth dan /api/user. */
 object AccountApi {
@@ -27,7 +33,12 @@ object AccountApi {
                 val json = runCatching { JSONObject(text) }.getOrNull()
                     ?: throw AccountError("server", "HTTP ${response.code}")
                 if (!json.optBoolean("ok", false)) {
-                    throw AccountError(json.optString("code", "server"), json.optString("error", "HTTP ${response.code}"))
+                    throw AccountError(
+                        json.optString("code", "server"),
+                        json.optString("error", "HTTP ${response.code}"),
+                        json.optString("resetId", "").takeIf { it.isNotBlank() },
+                        json.optInt("attempts", 0)
+                    )
                 }
                 return json
             }
